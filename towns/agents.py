@@ -2,6 +2,9 @@
 
 Agents are little pixel-art characters that walk between buildings
 in the town when Claude performs tool calls.
+
+v3: Agents are constrained to path tiles, customer villagers match
+real customer count, AI agent NPCs reflect active Claude sessions.
 """
 from __future__ import annotations
 
@@ -50,7 +53,7 @@ class Agent:
     name: str = "Agent"
 
     # v2: Role system
-    role: str = "villager"  # "coo", "receptionist", "content_writer", "review_manager", "route_planner", "villager", "worker"
+    role: str = "villager"  # "coo", "receptionist", "content_writer", "review_manager", "route_planner", "villager", "worker", "ai_agent", "customer"
 
     # v2: Path-based movement
     path_waypoints: list[tuple[float, float]] = field(default_factory=list)
@@ -59,6 +62,10 @@ class Agent:
     # v2: Building interaction
     inside_building: bool = False
     inside_timer: int = 0
+
+    # v3: Home building (customer villagers hang around their building)
+    home_x: float = 0
+    home_y: float = 0
 
     def get_sprite(self) -> Sprite:
         """Get the current animation frame sprite."""
@@ -78,9 +85,14 @@ class Agent:
             frames = sprites["idle"]
         return frames[self.anim_frame % len(frames)]
 
-    def tick(self):
-        """Update agent state for one animation tick."""
-        # Building interaction — agent is inside, count down
+    def tick(self, path_tiles: set[tuple[int, int]] | None = None):
+        """Update agent state for one animation tick.
+
+        Args:
+            path_tiles: Set of (x, y) coordinates that are walkable path tiles.
+                        If provided, idle wandering is constrained to these tiles.
+        """
+        # Building interaction -- agent is inside, count down
         if self.inside_building:
             self.inside_timer -= 1
             if self.inside_timer <= 0:
@@ -102,16 +114,32 @@ class Agent:
             self.work_timer -= 1
             if self.work_timer <= 0:
                 self.state = "idle"
-                self.idle_timer = random.randint(5, 20)
+                self.idle_timer = random.randint(10, 30)
         elif self.state == "idle":
             self.idle_timer -= 1
             if self.idle_timer <= 0:
-                # Wander randomly nearby, clamped to reasonable bounds
-                self.target_x = max(2, min(200, self.x + random.uniform(-20, 20)))
-                self.target_y = max(2, min(100, self.y + random.uniform(-10, 10)))
-                self.path_waypoints.clear()
-                self.current_waypoint = 0
-                self.state = "walking"
+                self._pick_new_destination(path_tiles)
+
+    def _pick_new_destination(self, path_tiles: set[tuple[int, int]] | None = None):
+        """Pick a new destination, constrained to path tiles if available."""
+        if path_tiles and len(path_tiles) > 0:
+            # Pick a random path tile as destination
+            path_list = list(path_tiles)
+            dest = random.choice(path_list)
+            self.target_x = float(dest[0])
+            self.target_y = float(dest[1])
+        elif self.home_x > 0 and self.home_y > 0:
+            # Wander near home building
+            self.target_x = self.home_x + random.uniform(-8, 8)
+            self.target_y = self.home_y + random.uniform(-4, 4)
+        else:
+            # Fallback: wander nearby, clamped to reasonable bounds
+            self.target_x = max(2, min(200, self.x + random.uniform(-20, 20)))
+            self.target_y = max(2, min(100, self.y + random.uniform(-10, 10)))
+
+        self.path_waypoints.clear()
+        self.current_waypoint = 0
+        self.state = "walking"
 
     def _move_along_path(self):
         """Follow waypoints to target."""
@@ -155,7 +183,7 @@ class Agent:
                 self.state = "working"
             else:
                 self.state = "idle"
-                self.idle_timer = random.randint(5, 20)
+                self.idle_timer = random.randint(10, 30)
             return
 
         # Normalize and move
@@ -206,12 +234,21 @@ class Particle:
 
 
 class AgentManager:
-    """Manages all agents and particles in a town."""
+    """Manages all agents and particles in a town.
+
+    v3: Accepts path_tiles so agents stay on walkable paths.
+    Agent spawning is controlled by town.py based on real data.
+    """
 
     def __init__(self):
         self.agents: list[Agent] = []
         self.particles: list[Particle] = []
         self._next_variant = 0
+        self.path_tiles: set[tuple[int, int]] = set()
+
+    def set_path_tiles(self, path_tiles: list[tuple[int, int]] | set[tuple[int, int]]):
+        """Set the walkable path tiles that agents are constrained to."""
+        self.path_tiles = set(path_tiles)
 
     def spawn_agent(self, x: float, y: float, session_id: str = "", use_v2: bool = True) -> Agent:
         """Create a new agent at a position."""
@@ -220,23 +257,54 @@ class AgentManager:
             variant=self._next_variant,
             session_id=session_id,
             name=f"Agent {len(self.agents) + 1}",
-            idle_timer=random.randint(3, 10),
+            idle_timer=random.randint(5, 15),
             use_v2_sprites=use_v2,
         )
         self._next_variant = (self._next_variant + 1) % max(len(AGENT_VARIANTS), len(AGENT_V2_VARIANTS))
         self.agents.append(agent)
         return agent
 
-    def spawn_role_agent(self, role: str, x: float, y: float) -> Agent:
+    def spawn_role_agent(self, role: str, x: float, y: float, name: str = "") -> Agent:
         """Spawn an agent with a specific role (uses role-specific sprite)."""
         variant_idx = ROLE_TO_VARIANT.get(role, self._next_variant)
+        display_name = name if name else f"{role.replace('_', ' ').title()}"
         agent = Agent(
             x=x, y=y,
             variant=variant_idx,
             role=role,
-            name=f"{role.replace('_', ' ').title()}",
+            name=display_name,
+            idle_timer=random.randint(5, 15),
+            use_v2_sprites=True,
+        )
+        self.agents.append(agent)
+        return agent
+
+    def spawn_customer_villager(self, x: float, y: float, customer_name: str, variant: int = 5) -> Agent:
+        """Spawn a villager representing a customer. They stay near their building."""
+        agent = Agent(
+            x=x, y=y,
+            variant=variant,
+            role="customer",
+            name=customer_name,
+            idle_timer=random.randint(5, 20),
+            use_v2_sprites=True,
+            home_x=x,
+            home_y=y,
+        )
+        self.agents.append(agent)
+        return agent
+
+    def spawn_ai_agent(self, x: float, y: float, session_id: str, name: str = "AI Agent") -> Agent:
+        """Spawn an NPC representing an active Claude session."""
+        agent = Agent(
+            x=x, y=y,
+            variant=random.randint(0, 4),  # use role agent variants (0-4)
+            role="ai_agent",
+            session_id=session_id,
+            name=name,
             idle_timer=random.randint(3, 10),
             use_v2_sprites=True,
+            speed=1.0,  # AI agents move a bit faster
         )
         self.agents.append(agent)
         return agent
@@ -273,7 +341,7 @@ class AgentManager:
     def tick(self):
         """Update all agents and particles."""
         for agent in self.agents:
-            agent.tick()
+            agent.tick(path_tiles=self.path_tiles if self.path_tiles else None)
 
         for particle in self.particles:
             particle.tick()
@@ -295,9 +363,25 @@ class AgentManager:
                 return agent
         return None
 
+    def get_agents_by_role(self, role: str) -> list[Agent]:
+        """Find all agents with a given role."""
+        return [a for a in self.agents if a.role == role]
+
+    def remove_agents_by_role(self, role: str):
+        """Remove all agents with a given role."""
+        self.agents = [a for a in self.agents if a.role != role]
+
     def ensure_min_agents(self, count: int, center_x: float, center_y: float):
-        """Ensure at least N agents exist (for visual liveliness)."""
+        """Ensure at least N agents exist (for visual liveliness).
+
+        Uses path tiles for spawn positions if available.
+        """
         while len(self.agents) < count:
-            x = center_x + random.uniform(-15, 15)
-            y = center_y + random.uniform(-8, 8)
-            self.spawn_agent(x, y)
+            if self.path_tiles:
+                # Spawn on a random path tile
+                tile = random.choice(list(self.path_tiles))
+                self.spawn_agent(float(tile[0]), float(tile[1]))
+            else:
+                x = center_x + random.uniform(-15, 15)
+                y = center_y + random.uniform(-8, 8)
+                self.spawn_agent(x, y)

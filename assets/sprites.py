@@ -1088,97 +1088,119 @@ HQ_METROPOLIS: Sprite = [
 
 
 # ═══════════════════════════════════════════════════════════
-# VILLAGER SPRITES (8 wide × 14 tall) — outlined pixel art
+# VILLAGER SPRITES (7 wide x 10 tall) — chunky RPG-style pixel art
+# Inspired by Pixel Agents — clear readable characters with distinct
+# hair, face, shirt, pants, boots and dark outline.
 # ═══════════════════════════════════════════════════════════
+
+# Eye color for all villagers (tiny dark dots on face)
+_EYE = (24, 20, 37)  # same as outline — reads as pupils
 
 def make_villager(
     hair: Color, skin: Color, shirt: Color, pants: Color,
     accent: Color | None = None,
     hat: Color | None = None,
 ) -> dict[str, list[Sprite]]:
-    """Create a 7×10 pixel villager sprite with outlined pixel art style.
+    """Create a 7x10 chunky RPG villager sprite with clean dark outline.
 
-    At 7×10 these are visible and proportional next to 14-20 tall buildings.
-    Features: distinct head, body, limbs, clothing detail.
+    Design reference: Pixel Agents by @Amank1412 — chunky, readable
+    characters with clear head/body/legs and bold colors.
+    7 wide x 10 tall is well-proportioned next to 14-20px buildings.
+
+    Features:
+      - Row 0-1: hair (distinct color, no hat unless specified)
+      - Row 2: face with visible eyes (skin + eye dots)
+      - Row 3-4: shirt/top with optional accent stripe
+      - Row 5-6: darker pants
+      - Row 7-8: boots with slight separation
+      - Row 9: feet/ground contact
+      - Dark outline on all edges for readability
     """
-    OL = OL_C   # outline
+    OL = OL_C   # dark outline
     HD = hair
     SK = skin
+    EY = _EYE   # eyes
     SH = shirt
     PT = pants
     BT = BOOTS
     RC = accent if accent is not None else shirt
     HT = hat
 
+    # ── IDLE: standing still, arms at sides ──
     idle: Sprite = [
-        [_, _, OL, HD, OL, _, _],    # hair top
-        [_, OL, HD, HD, HD, OL, _],  # hair
-        [_, OL, SK, SK, SK, OL, _],  # face
-        [_, OL, SH, RC, SH, OL, _],  # shirt + accent
-        [OL, SH, SH, SH, SH, SH, OL],  # shirt body wide
-        [_, OL, SH, SH, SH, OL, _],  # shirt lower
-        [_, OL, PT, PT, PT, OL, _],   # pants
-        [_, OL, PT, _, PT, OL, _],    # pants lower
-        [_, OL, BT, _, BT, OL, _],   # boots apart
-        [_, _, OL, _, OL, _, _],      # feet
+        [_, _, OL, HD, OL, _, _],        # hair crown
+        [_, OL, HD, HD, HD, OL, _],      # hair sides
+        [_, OL, SK, EY, SK, OL, _],      # face: skin-eye-skin (2 eyes merge to 1 center dot at this scale)
+        [_, OL, SH, RC, SH, OL, _],      # shirt collar + accent
+        [_, OL, SH, SH, SH, OL, _],      # shirt torso
+        [_, OL, SH, SH, SH, OL, _],      # shirt lower / belt line
+        [_, OL, PT, PT, PT, OL, _],       # pants upper
+        [_, OL, PT, OL, PT, OL, _],       # pants lower — center gap for legs
+        [_, OL, BT, _, BT, OL, _],       # boots
+        [_, _, OL, _, OL, _, _],          # boot soles
     ]
 
+    # ── WALK FRAME 1: left leg forward, right arm forward ──
     walk_1: Sprite = [
-        [_, _, OL, HD, OL, _, _],    # hair top
-        [_, OL, HD, HD, HD, OL, _],  # hair
-        [_, OL, SK, SK, SK, OL, _],  # face
-        [_, OL, SH, RC, SH, OL, _],  # shirt + accent
-        [SK, SH, SH, SH, SH, SH, OL],  # left arm fwd
-        [_, OL, SH, SH, SH, OL, _],  # shirt
-        [_, OL, PT, PT, PT, OL, _],   # pants
-        [OL, PT, _, _, PT, OL, _],    # legs apart
-        [OL, BT, _, _, _, OL, _],     # left foot fwd
-        [_, _, _, _, OL, _, _],       # right foot back
+        [_, _, OL, HD, OL, _, _],        # hair
+        [_, OL, HD, HD, HD, OL, _],      # hair
+        [_, OL, SK, EY, SK, OL, _],      # face
+        [_, OL, SH, RC, SH, OL, _],      # shirt
+        [_, SK, SH, SH, SH, OL, _],      # right arm back (skin pixel left)
+        [_, OL, SH, SH, SH, SK, _],      # left arm forward (skin pixel right)
+        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, PT, OL, _, OL, PT, _],        # stride — legs apart
+        [OL, BT, _, _, _, BT, OL],       # feet wide stride
+        [OL, _, _, _, _, _, OL],          # ground contact
     ]
 
+    # ── WALK FRAME 2: right leg forward, left arm forward ──
     walk_2: Sprite = [
-        [_, _, OL, HD, OL, _, _],    # hair top
-        [_, OL, HD, HD, HD, OL, _],  # hair
-        [_, OL, SK, SK, SK, OL, _],  # face
-        [_, OL, SH, RC, SH, OL, _],  # shirt + accent
-        [OL, SH, SH, SH, SH, SH, SK],  # right arm fwd
-        [_, OL, SH, SH, SH, OL, _],  # shirt
-        [_, OL, PT, PT, PT, OL, _],   # pants
-        [_, OL, PT, _, _, PT, OL],    # legs apart
-        [_, _, _, _, BT, OL, _],      # right foot fwd
-        [_, OL, _, _, _, _, _],       # left foot back
+        [_, _, OL, HD, OL, _, _],        # hair
+        [_, OL, HD, HD, HD, OL, _],      # hair
+        [_, OL, SK, EY, SK, OL, _],      # face
+        [_, OL, SH, RC, SH, OL, _],      # shirt
+        [_, OL, SH, SH, SH, SK, _],      # left arm back
+        [_, SK, SH, SH, SH, OL, _],      # right arm forward
+        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, PT, OL, _, OL, PT, _],        # stride — legs apart (mirrored)
+        [OL, BT, _, _, _, BT, OL],       # feet wide stride
+        [_, OL, _, _, _, OL, _],          # ground contact
     ]
 
+    # ── WORK FRAME 1: right arm raised (hammering/typing) ──
     work_1: Sprite = [
-        [_, _, OL, HD, OL, _, _],    # hair top
-        [_, OL, HD, HD, HD, OL, _],  # hair
-        [_, OL, SK, SK, SK, OL, _],  # face
-        [_, OL, SH, RC, SH, OL, SK],  # shirt + arm up
-        [OL, SH, SH, SH, SH, SH, SK],  # arm raised
-        [_, OL, SH, SH, SH, OL, _],  # shirt
-        [_, OL, PT, PT, PT, OL, _],   # pants
-        [_, OL, PT, _, PT, OL, _],    # pants
-        [_, OL, BT, _, BT, OL, _],   # boots
-        [_, _, OL, _, OL, _, _],      # feet
+        [_, _, OL, HD, OL, _, _],        # hair
+        [_, OL, HD, HD, HD, OL, _],      # hair
+        [_, OL, SK, EY, SK, OL, _],      # face
+        [_, OL, SH, RC, SH, SK, _],      # shirt + right arm up
+        [_, OL, SH, SH, SH, OL, SK],    # torso + raised hand
+        [_, OL, SH, SH, SH, OL, _],      # shirt lower
+        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, OL, PT, OL, PT, OL, _],       # pants lower
+        [_, OL, BT, _, BT, OL, _],       # boots
+        [_, _, OL, _, OL, _, _],          # soles
     ]
 
+    # ── WORK FRAME 2: both arms out (carrying/gesturing) ──
     work_2: Sprite = [
-        [_, _, OL, HD, OL, _, _],    # hair top
-        [_, OL, HD, HD, HD, OL, _],  # hair
-        [_, OL, SK, SK, SK, OL, _],  # face
-        [SK, SH, RC, SH, RC, SH, SK],  # both arms out
-        [OL, SH, SH, SH, SH, SH, OL],  # shirt wide
-        [_, OL, SH, SH, SH, OL, _],  # shirt
-        [_, OL, PT, PT, PT, OL, _],   # pants
-        [_, OL, PT, _, PT, OL, _],    # pants
-        [_, OL, BT, _, BT, OL, _],   # boots
-        [_, _, OL, _, OL, _, _],      # feet
+        [_, _, OL, HD, OL, _, _],        # hair
+        [_, OL, HD, HD, HD, OL, _],      # hair
+        [_, OL, SK, EY, SK, OL, _],      # face
+        [SK, OL, SH, RC, SH, OL, SK],   # both arms out
+        [_, OL, SH, SH, SH, OL, _],      # torso
+        [_, OL, SH, SH, SH, OL, _],      # shirt lower
+        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, OL, PT, OL, PT, OL, _],       # pants lower
+        [_, OL, BT, _, BT, OL, _],       # boots
+        [_, _, OL, _, OL, _, _],          # soles
     ]
 
+    # Optional hat overrides top two rows of hair
     if HT is not None:
         for frame in [idle, walk_1, walk_2, work_1, work_2]:
-            frame[0] = [_, OL, HT, HT, HT, OL, _]  # hat replaces hair top row
-            frame[1] = [_, OL, HT, HT, HT, OL, _]  # hat covers hair
+            frame[0] = [_, OL, HT, HT, HT, OL, _]   # hat brim
+            frame[1] = [_, OL, HT, HD, HT, OL, _]    # hat + hair peek
 
     return {
         "idle": [idle],
@@ -1188,23 +1210,23 @@ def make_villager(
 
 
 VILLAGER_VARIANTS = [
-    # Role agents (indices 0-4)
+    # ── Role agents (indices 0-4) ──
     make_villager(HAIR_BROWN, SKIN, SHIRT_BLUE, PANTS, accent=COO_CAPE),           # 0: COO
     make_villager(HAIR_DARK, SKIN, SHIRT_GREEN, PANTS, accent=RECEPTIONIST_APRON),  # 1: Receptionist
     make_villager(HAIR_BLONDE, SKIN, SHIRT_RED, PANTS, accent=CONTENT_SHIRT),      # 2: Content Writer
     make_villager(HAIR_BROWN, SKIN, SHIRT_RED, PANTS, accent=REVIEW_VEST),         # 3: Review Manager
     make_villager(HAIR_DARK, SKIN, SHIRT_PURPLE, PANTS, accent=ROUTE_SASH),        # 4: Route Planner
-    # Townspeople (indices 5-11)
-    make_villager(HAIR_BLONDE, SKIN, SHIRT_BLUE, PANTS_BROWN),                     # 5: Villager
-    make_villager(HAIR_BROWN, SKIN, SHIRT_GREEN, PANTS),                           # 6: Villager
-    make_villager(HAIR_DARK, SKIN_DARK, SHIRT_RED, PANTS_BROWN),                   # 7: Villager
-    make_villager(HAIR_BLONDE, SKIN_DARK, SHIRT_PURPLE, PANTS),                    # 8: Villager
+    # ── Townspeople / customers (indices 5-11) ──
+    make_villager(HAIR_BLONDE, SKIN, SHIRT_BLUE, PANTS_BROWN),                     # 5: Villager A
+    make_villager(HAIR_BROWN, SKIN, SHIRT_GREEN, PANTS),                           # 6: Villager B
+    make_villager(HAIR_DARK, SKIN_DARK, SHIRT_RED, PANTS_BROWN),                   # 7: Villager C
+    make_villager(HAIR_BLONDE, SKIN_DARK, SHIRT_PURPLE, PANTS),                    # 8: Villager D
     make_villager(HAIR_BROWN, SKIN, WOOD_PLANK, PANTS_BROWN, hat=WORKER_HELMET),   # 9: Worker w/ hat
     make_villager(HAIR_DARK, SKIN, SHIRT_BLUE, PANTS, accent=ROOF_THATCH),         # 10: Shopkeeper
     make_villager(HAIR_BLONDE, SKIN, SHIRT_GREEN, PANTS_BROWN, accent=DIRT),       # 11: Farmer
 ]
 
-# Backward compatibility — agents.py imports this
+# Backward compatibility -- agents.py imports this
 AGENT_V2_VARIANTS = VILLAGER_VARIANTS
 
 

@@ -438,24 +438,23 @@
 
 <!-- Main Content -->
 <div id="main">
-  <!-- Disconnected Overlay -->
-  <div id="disconnected-overlay">
-    <div class="dot-pulse"></div>
-    <h2>CODEWORLD</h2>
-    <p>Red Pine Kingdom</p>
-    <p style="margin-top:16px">Start the server on your machine:</p>
-    <p><code>cd codeworld && .venv/bin/python main.py --headless</code></p>
-    <p style="margin-top:12px">Then open on your browser:</p>
-    <p><code>http://localhost:8765</code></p>
-    <p style="margin-top:12px">Or on your phone (same WiFi):</p>
-    <p><code>http://&lt;your-ip&gt;:8765</code></p>
-    <p style="margin-top:16px;font-size:6px;color:var(--text-dim);max-width:400px">
-      You can also add <code style="font-size:6px">?ws=your-ip:8765</code> to this URL to connect remotely.
-    </p>
-  </div>
-
   <!-- Kingdom View (default) -->
   <div id="kingdom-view">
+    <!-- Disconnected Overlay (inside kingdom view only) -->
+    <div id="disconnected-overlay">
+      <div class="dot-pulse"></div>
+      <h2>CODEWORLD</h2>
+      <p>Red Pine Kingdom</p>
+      <p style="margin-top:16px">Start the server on your machine:</p>
+      <p><code>cd codeworld && .venv/bin/python main.py --headless</code></p>
+      <p style="margin-top:12px">Then open on your browser:</p>
+      <p><code>http://localhost:8765</code></p>
+      <p style="margin-top:12px">Or on your phone (same WiFi):</p>
+      <p><code>http://&lt;your-ip&gt;:8765</code></p>
+      <p style="margin-top:16px;font-size:6px;color:var(--text-dim);max-width:400px">
+        You can also add <code style="font-size:6px">?ws=your-ip:8765</code> to this URL to connect remotely.
+      </p>
+    </div>
     <div id="canvas-area">
       <div id="canvas-wrap">
         <canvas id="screen"></canvas>

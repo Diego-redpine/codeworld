@@ -313,6 +313,9 @@ class Kingdom:
         # ── Generate paths ──
         self._generate_paths()
 
+        # ── Pass path tiles to agent manager so agents stay on paths ──
+        self.agent_manager.set_path_tiles(self.path_tiles)
+
         # ── Scatter decorations ──
         self._scatter_trees(width, height)
         self._scatter_flowers(width, height)
@@ -324,19 +327,17 @@ class Kingdom:
         # ── Spawn ambient objects ──
         self._spawn_ambient(width, height)
 
-        # ── Ensure agents ──
-        pop = 3
-        if self.metrics and hasattr(self.metrics, 'population'):
-            pop = min(self.metrics.population, 8)
-        self.agent_manager.ensure_min_agents(max(2, pop), cx, cy)
-
-        # ── Spawn role agents ──
-        self._spawn_role_agents(cx, cy)
+        # ── Spawn agents (data-driven) ──
+        self._spawn_agents(cx, cy)
 
         self._layout_dirty = False
 
     def _place_hq(self, cx: int, cy: int):
-        """Place the HQ building at center, sized by milestone."""
+        """Place the HQ building prominently at center.
+
+        HQ is placed slightly above center so it visually dominates the town.
+        A clearing is maintained around it for the town square feel.
+        """
         milestone = self._get_milestone()
 
         if HAS_V2_SPRITES and milestone in HQ_SPRITES:
@@ -347,9 +348,12 @@ class Kingdom:
         sw = len(sprite[0]) if sprite else 13
         sh = len(sprite) if sprite else 12
 
+        # Place HQ slightly above center for visual dominance
+        hq_y = cy - sh // 2 - 4
+
         self.hq = Building(
             x=cx - sw // 2,
-            y=cy - sh // 2,
+            y=max(2, hq_y),
             building_type="hq",
             name=f"Red Pine HQ ({milestone})",
             sprite=sprite,
@@ -357,14 +361,17 @@ class Kingdom:
         )
 
     def _place_districts(self, cx: int, cy: int):
-        """Place district buildings in inner ring around HQ."""
+        """Place district buildings in inner ring around HQ.
+
+        Districts are placed with clear separation and face toward the center.
+        """
         rng = self._rng
         district_items = list(DISTRICTS.items())
         placed_rects = []
 
-        # HQ rect
+        # HQ rect -- give HQ a generous exclusion zone
         if self.hq:
-            placed_rects.append((self.hq.x - 2, self.hq.y - 2, self.hq.width + 4, self.hq.height + 4))
+            placed_rects.append((self.hq.x - 4, self.hq.y - 4, self.hq.width + 8, self.hq.height + 8))
 
         for i, (key, info) in enumerate(district_items):
             btype = info["building"]
@@ -375,21 +382,23 @@ class Kingdom:
             sw = len(sprite[0]) if sprite else 9
             sh = len(sprite) if sprite else 10
 
-            angle = (2 * math.pi * i / len(district_items)) + rng.uniform(-0.2, 0.2)
-            radius = max(sw, sh) * 1.8 + rng.uniform(-2, 3)
+            # Evenly space around HQ with generous radius for clear separation
+            angle = (2 * math.pi * i / len(district_items)) + rng.uniform(-0.15, 0.15)
+            radius = max(sw, sh) * 2.5 + rng.uniform(0, 3)
             bx = int(cx + math.cos(angle) * radius) - sw // 2
-            by = int(cy + math.sin(angle) * radius * 0.6) - sh // 2
+            by = int(cy + math.sin(angle) * radius * 0.55) - sh // 2
 
-            bx = max(2, min(self.canvas_w - sw - 2, bx))
-            by = max(2, min(self.canvas_h - sh - 2, by))
+            bx = max(3, min(self.canvas_w - sw - 3, bx))
+            by = max(3, min(self.canvas_h - sh - 3, by))
 
-            for _ in range(20):
-                if not self._overlaps(bx, by, sw, sh, placed_rects):
+            # Try harder to avoid overlaps with bigger nudges
+            for _ in range(40):
+                if not self._overlaps(bx, by, sw, sh, placed_rects, padding=3):
                     break
-                bx += rng.randint(-3, 3)
-                by += rng.randint(-2, 2)
-                bx = max(2, min(self.canvas_w - sw - 2, bx))
-                by = max(2, min(self.canvas_h - sh - 2, by))
+                bx += rng.randint(-5, 5)
+                by += rng.randint(-4, 4)
+                bx = max(3, min(self.canvas_w - sw - 3, bx))
+                by = max(3, min(self.canvas_h - sh - 3, by))
 
             building = Building(
                 x=bx, y=by,
@@ -399,27 +408,32 @@ class Kingdom:
                 is_district=True,
             )
             self.district_buildings.append(building)
-            placed_rects.append((bx - 2, by - 2, sw + 4, sh + 4))
+            placed_rects.append((bx - 3, by - 3, sw + 6, sh + 6))
 
     def _place_customer_buildings(self, cx: int, cy: int):
-        """Place a building for each Red Pine customer."""
+        """Place a building for each Red Pine customer.
+
+        Buildings are placed in expanding rings with clear separation.
+        Each ring holds ~6 buildings. Buildings have generous spacing so
+        paths and decorations fit between them.
+        """
         customers = self._get_customers()
         if not customers and not HAS_V2_SPRITES:
             return
 
-        # Cap buildings based on canvas area — allow more buildings with bigger canvas
-        max_buildings = (self.canvas_w * self.canvas_h) // 250
+        # Cap buildings based on canvas area
+        max_buildings = (self.canvas_w * self.canvas_h) // 300
         if len(customers) > max_buildings:
             customers = customers[:max_buildings]
 
         rng = self._rng
         placed_rects = []
 
-        # Existing building rects
+        # Existing building rects with generous exclusion zones
         if self.hq:
-            placed_rects.append((self.hq.x - 2, self.hq.y - 2, self.hq.width + 4, self.hq.height + 4))
+            placed_rects.append((self.hq.x - 6, self.hq.y - 6, self.hq.width + 12, self.hq.height + 12))
         for b in self.district_buildings:
-            placed_rects.append((b.x - 2, b.y - 2, b.width + 4, b.height + 4))
+            placed_rects.append((b.x - 4, b.y - 4, b.width + 8, b.height + 8))
 
         for i, customer in enumerate(customers):
             btype_key = "hut"
@@ -435,26 +449,51 @@ class Kingdom:
             sw = len(sprite[0]) if sprite else 10
             sh = len(sprite) if sprite else 10
 
-            # Place in expanding rings — older customers closer to center
-            # Some extra spacing so decorations fit between buildings
-            ring = (i // 8) + 2  # 8 buildings per ring
-            angle = (i * 2.3 + rng.uniform(-0.4, 0.4))
-            radius = ring * max(sw, sh) * 1.2 + rng.uniform(-3, 4)
+            # Place in expanding rings -- 6 per ring, generous spacing
+            buildings_per_ring = 6
+            ring = (i // buildings_per_ring) + 2
+            angle_offset = (ring % 2) * (math.pi / buildings_per_ring)  # stagger rings
+            angle = (2 * math.pi * (i % buildings_per_ring) / buildings_per_ring) + angle_offset + rng.uniform(-0.2, 0.2)
+            radius = ring * max(sw, sh) * 1.4 + rng.uniform(-2, 3)
             bx = int(cx + math.cos(angle) * radius) - sw // 2
             by = int(cy + math.sin(angle) * radius * 0.55) - sh // 2
 
-            bx = max(2, min(self.canvas_w - sw - 2, bx))
-            by = max(2, min(self.canvas_h - sh - 2, by))
+            bx = max(3, min(self.canvas_w - sw - 3, bx))
+            by = max(3, min(self.canvas_h - sh - 3, by))
 
-            for _ in range(20):
-                if not self._overlaps(bx, by, sw, sh, placed_rects):
+            # Try harder to find non-overlapping position
+            found = False
+            for attempt in range(80):
+                if not self._overlaps(bx, by, sw, sh, placed_rects, padding=2):
+                    found = True
                     break
-                bx += rng.randint(-3, 3)
-                by += rng.randint(-2, 2)
-                bx = max(2, min(self.canvas_w - sw - 2, bx))
-                by = max(2, min(self.canvas_h - sh - 2, by))
+                if attempt < 30:
+                    # Phase 1: small nudges near intended position
+                    bx += rng.randint(-5, 5)
+                    by += rng.randint(-4, 4)
+                elif attempt < 60:
+                    # Phase 2: spiral outward from center
+                    spiral_angle = attempt * 0.5
+                    spiral_r = 10 + attempt
+                    bx = int(cx + math.cos(spiral_angle) * spiral_r) - sw // 2
+                    by = int(cy + math.sin(spiral_angle) * spiral_r * 0.55) - sh // 2
+                else:
+                    # Phase 3: random placement anywhere in canvas
+                    bx = rng.randint(5, self.canvas_w - sw - 5)
+                    by = rng.randint(5, self.canvas_h - sh - 5)
+                bx = max(3, min(self.canvas_w - sw - 3, bx))
+                by = max(3, min(self.canvas_h - sh - 3, by))
 
-            cust_name = customer.name if hasattr(customer, 'name') else f"Customer {i+1}"
+            # Descriptive customer name
+            cust_name = ""
+            if hasattr(customer, 'name') and customer.name:
+                cust_name = customer.name
+            elif hasattr(customer, 'business_type') and customer.business_type:
+                btype = customer.business_type.replace('_', ' ').title()
+                cust_name = f"{btype} Owner"
+            else:
+                cust_name = f"Customer {i + 1}"
+
             building = Building(
                 x=bx, y=by,
                 building_type=btype_key,
@@ -464,11 +503,20 @@ class Kingdom:
                 customer_type=customer.business_type if hasattr(customer, 'business_type') else "",
             )
             self.customer_buildings.append(building)
-            placed_rects.append((bx - 2, by - 2, sw + 4, sh + 4))
+            placed_rects.append((bx - 3, by - 3, sw + 6, sh + 6))
 
-    def _overlaps(self, x, y, w, h, rects):
+    def _overlaps(self, x, y, w, h, rects, padding=0):
+        """Check if rectangle (x,y,w,h) overlaps any existing rect.
+
+        Args:
+            padding: Extra padding around the test rectangle.
+        """
+        tx = x - padding
+        ty = y - padding
+        tw = w + padding * 2
+        th = h + padding * 2
         for rx, ry, rw, rh in rects:
-            if x < rx + rw and x + w > rx and y < ry + rh and y + h > ry:
+            if tx < rx + rw and tx + tw > rx and ty < ry + rh and ty + th > ry:
                 return True
         return False
 
@@ -506,12 +554,17 @@ class Kingdom:
             self.shore_tiles.append((x, y + river_width + 1))
 
     def _generate_paths(self):
-        """Generate wide paths between buildings with organic routing."""
+        """Generate wide paths connecting all buildings to HQ.
+
+        Paths are L-shaped (horizontal then vertical) with configurable width.
+        Building footprints are excluded so paths route around them.
+        A central plaza is drawn around the HQ for the town square.
+        """
         if not self.buildings or len(self.buildings) < 2:
             return
         hq = self.buildings[0]
         ccx = int(hq.center_x)
-        ccy = int(hq.y + hq.height + 2)
+        ccy = int(hq.y + hq.height + 3)
 
         path_set = set()
         building_pixels = set()
@@ -520,24 +573,36 @@ class Kingdom:
                 for bx in range(b.x - 1, b.x + b.width + 1):
                     building_pixels.add((bx, by))
 
-        # Path width: 6-8px for main roads — wide visible roads like RPG towns
+        # Path width: 6-8px for main roads -- visible roads like RPG towns
         half_w = 3
 
+        # ── Central plaza around HQ ──
+        if self.hq:
+            plaza_pad = 5
+            for py in range(self.hq.y + self.hq.height, self.hq.y + self.hq.height + plaza_pad):
+                for px in range(self.hq.x - plaza_pad, self.hq.x + self.hq.width + plaza_pad):
+                    if (px, py) not in building_pixels and 0 <= px < self.canvas_w and 0 <= py < self.canvas_h:
+                        path_set.add((px, py))
+
+        # ── Connect each building to the HQ hub ──
         for building in self.buildings[1:]:
             bx = int(building.center_x)
+            # Building entrance is at the bottom
             by = int(building.y + building.height + 2)
             x, y = bx, by
 
-            # Walk horizontal then vertical — wide roads
+            # Walk horizontal then vertical -- wide roads
             while x != ccx:
                 for d in range(-half_w, half_w + 1):
-                    if (x, y + d) not in building_pixels:
-                        path_set.add((x, y + d))
+                    tile = (x, y + d)
+                    if tile not in building_pixels and 0 <= tile[0] < self.canvas_w and 0 <= tile[1] < self.canvas_h:
+                        path_set.add(tile)
                 x += 1 if x < ccx else -1
             while y != ccy:
                 for d in range(-half_w, half_w + 1):
-                    if (x + d, y) not in building_pixels:
-                        path_set.add((x + d, y))
+                    tile = (x + d, y)
+                    if tile not in building_pixels and 0 <= tile[0] < self.canvas_w and 0 <= tile[1] < self.canvas_h:
+                        path_set.add(tile)
                 y += 1 if y < ccy else -1
 
         self.path_tiles = list(path_set)
@@ -747,15 +812,15 @@ class Kingdom:
                     ty = building.y + building.height + 1
                 _try_place_deco(prop, tx, ty)
 
-        # ── Place lamp posts along paths ──
+        # ── Place lamp posts along paths (more generously) ──
         path_list = self.path_tiles
         if path_list:
-            lamp_count = min(len(path_list) // 40, 20)
+            lamp_count = min(len(path_list) // 25, 30)  # more lamps
             for i in range(lamp_count):
-                idx = (i * 41 + 17) % len(path_list)
+                idx = (i * 31 + 13) % len(path_list)
                 px, py = path_list[idx]
-                # Try to place next to path
-                for offset in [(3, 0), (-3, 0), (0, -3), (0, 3)]:
+                # Try to place next to path (not ON path)
+                for offset in [(4, 0), (-4, 0), (0, -4), (0, 4), (3, 1), (-3, 1)]:
                     if _try_place_deco(LAMP_POST, px + offset[0], py + offset[1]):
                         break
 
@@ -769,12 +834,22 @@ class Kingdom:
                 ty = b.y + b.height + 2
                 _try_place_deco(SIGN_POST, tx, ty)
 
-        # ── Place flower beds near district buildings ──
+        # ── Place flower beds near district buildings and along paths ──
         for building in self.district_buildings[:4]:
             # Flower beds in front of district buildings
             tx = building.x + rng.randint(0, max(0, building.width - 6))
             ty = building.y + building.height + 2
             _try_place_deco(FLOWER_BED, tx, ty)
+
+        # Additional flower beds along paths for visual richness
+        if path_list:
+            flower_bed_count = min(len(path_list) // 50, 12)
+            for i in range(flower_bed_count):
+                idx = (i * 53 + 29) % len(path_list)
+                px, py = path_list[idx]
+                for offset in [(5, 0), (-5, 0), (0, 5), (0, -5)]:
+                    if _try_place_deco(FLOWER_BED, px + offset[0], py + offset[1]):
+                        break
 
         # ── Place a market stall near the market building ──
         for building in self.buildings:
@@ -872,42 +947,95 @@ class Kingdom:
                 obj_type="flag",
             ))
 
-    def _spawn_role_agents(self, cx: int, cy: int):
-        """Spawn named role agents near relevant district buildings."""
-        roles = ["coo", "receptionist", "content_writer", "review_manager", "route_planner"]
-        active_agents = 0
-        if self.metrics and hasattr(self.metrics, 'active_agents'):
-            active_agents = self.metrics.active_agents
+    def _spawn_agents(self, cx: int, cy: int):
+        """Spawn all NPC agents based on real data.
 
-        # Spawn at least some role agents even without active subscriptions
-        for i, role in enumerate(roles[:max(2, active_agents)]):
-            # Find a district building to spawn near
+        Agent types:
+          1. Staff roles: 1 COO, 1 Receptionist (always present, no duplicates)
+          2. AI Agents: one NPC per active Claude session (from transcript watcher)
+          3. Customer villagers: one per customer from Supabase data
+             Each customer villager hangs around their building.
+        """
+        rng = self._rng
+
+        # Clear existing agents to avoid duplicates on re-layout
+        self.agent_manager.agents.clear()
+
+        # ── 1. Staff roles: exactly 1 COO + 1 Receptionist ──
+        staff_roles = ["coo", "receptionist"]
+        for i, role in enumerate(staff_roles):
             if i < len(self.district_buildings):
                 b = self.district_buildings[i]
-                x, y = b.center_x + self._rng.uniform(-3, 3), b.y + b.height
+                x, y = b.center_x + rng.uniform(-3, 3), b.y + b.height + 1
             else:
-                x, y = cx + self._rng.uniform(-10, 10), cy + self._rng.uniform(-5, 5)
+                x, y = cx + rng.uniform(-8, 8), cy + rng.uniform(-4, 4)
+            # Snap to nearest path tile if possible
+            x, y = self._snap_to_path(x, y)
             self.agent_manager.spawn_role_agent(role, x, y)
 
-        # Spawn townsfolk proportional to milestone — near buildings for organic spread
-        townsfolk_counts = {
-            "Settlement": 5, "Village": 8, "Town": 12,
-            "City": 16, "Capital": 20, "Metropolis": 25,
-        }
-        milestone = self._get_milestone()
-        n_townsfolk = townsfolk_counts.get(milestone, 3)
-        all_buildings = self.buildings
-        for i in range(n_townsfolk):
-            # Spawn near a random building to spread them across the town
-            if all_buildings:
-                b = all_buildings[i % len(all_buildings)]
-                vx = b.center_x + self._rng.uniform(-12, 12)
-                vy = b.y + b.height + self._rng.uniform(0, 6)
+        # ── 2. AI Agent NPCs: one per active Claude session ──
+        active_agent_count = 0
+        if self.metrics and hasattr(self.metrics, 'active_agents'):
+            active_agent_count = self.metrics.active_agents
+
+        for i in range(active_agent_count):
+            # Spawn near a district building (AI agents work in the core town)
+            if self.district_buildings:
+                b = self.district_buildings[i % len(self.district_buildings)]
+                x, y = b.center_x + rng.uniform(-5, 5), b.y + b.height + rng.uniform(1, 4)
             else:
-                vx = cx + self._rng.uniform(-50, 50)
-                vy = cy + self._rng.uniform(-25, 25)
-            agent = self.agent_manager.spawn_agent(vx, vy, use_v2=True)
-            agent.variant = 5 + (i % 7)  # cycle through townspeople variants (5-11)
+                x, y = cx + rng.uniform(-15, 15), cy + rng.uniform(-8, 8)
+            x, y = self._snap_to_path(x, y)
+            session_name = f"Claude Session {i + 1}"
+            self.agent_manager.spawn_ai_agent(x, y, session_id=f"session_{i}", name=session_name)
+
+        # ── 3. Customer villagers: one per actual customer ──
+        customers = self._get_customers()
+        for i, customer in enumerate(customers):
+            if i < len(self.customer_buildings):
+                b = self.customer_buildings[i]
+                # Spawn near their building entrance
+                vx = b.center_x + rng.uniform(-3, 3)
+                vy = b.y + b.height + rng.uniform(1, 4)
+            else:
+                # Extra customers without buildings get placed on paths
+                vx = cx + rng.uniform(-30, 30)
+                vy = cy + rng.uniform(-15, 15)
+
+            vx, vy = self._snap_to_path(vx, vy)
+
+            # Determine customer name
+            cust_name = ""
+            if hasattr(customer, 'name') and customer.name:
+                cust_name = customer.name
+            elif hasattr(customer, 'business_type') and customer.business_type:
+                btype = customer.business_type.replace('_', ' ').title()
+                cust_name = f"{btype} Owner"
+            else:
+                cust_name = f"Customer {i + 1}"
+
+            # Cycle through townspeople sprite variants (5-11)
+            variant = 5 + (i % 7)
+            self.agent_manager.spawn_customer_villager(vx, vy, cust_name, variant=variant)
+
+    def _snap_to_path(self, x: float, y: float) -> tuple[float, float]:
+        """Snap a position to the nearest path tile if possible."""
+        if not self.path_tiles:
+            return x, y
+        best_dist = float('inf')
+        best = (x, y)
+        # Sample path tiles to avoid O(n) for huge path sets
+        tiles = self.path_tiles
+        if len(tiles) > 200:
+            tiles = list(tiles)
+            self._rng.shuffle(tiles)
+            tiles = tiles[:200]
+        for px, py in tiles:
+            dist = (px - x) ** 2 + (py - y) ** 2
+            if dist < best_dist:
+                best_dist = dist
+                best = (float(px), float(py))
+        return best
 
     def draw(self, canvas: PixelCanvas, tick: int = 0):
         """Draw the entire kingdom onto a pixel canvas."""
@@ -964,12 +1092,13 @@ class Kingdom:
                 canvas.draw_sprite(sprite, ax, ay)
             else:
                 canvas.draw_sprite_flipped(sprite, ax, ay)
-            # Bright marker dot above agent head for visibility
-            sw = len(sprite[0]) if sprite else 3
-            marker_x = ax + sw // 2
-            marker_y = ay - 1
-            if 0 <= marker_x < canvas.width and 0 <= marker_y < canvas.height:
-                canvas.set_pixel(marker_x, marker_y, palettes.WINDOW_BRIGHT)
+            # Marker dot above AI agent heads (only) for visibility
+            if agent.role == "ai_agent":
+                sw = len(sprite[0]) if sprite else 3
+                marker_x = ax + sw // 2
+                marker_y = ay - 1
+                if 0 <= marker_x < canvas.width and 0 <= marker_y < canvas.height:
+                    canvas.set_pixel(marker_x, marker_y, palettes.UI_GOLD)
 
         # ── Layer 7: Ambient objects ──
         for amb in self.ambient_objects:
