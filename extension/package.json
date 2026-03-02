@@ -1,0 +1,72 @@
+{
+  "name": "codeworld-kingdom",
+  "displayName": "CodeWorld Kingdom",
+  "description": "Watch your Red Pine kingdom grow as you code — interactive pixel art business visualizer",
+  "version": "0.1.0",
+  "publisher": "redpine",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "icon": "icon.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeworld.openKingdom",
+        "title": "CodeWorld: Open Kingdom"
+      },
+      {
+        "command": "codeworld.stopServer",
+        "title": "CodeWorld: Stop Server"
+      }
+    ],
+    "configuration": {
+      "title": "CodeWorld Kingdom",
+      "properties": {
+        "codeworld.port": {
+          "type": "number",
+          "default": 8765,
+          "description": "WebSocket server port"
+        },
+        "codeworld.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-start Python backend when extension activates"
+        },
+        "codeworld.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Python interpreter (auto-detected if empty)"
+        },
+        "codeworld.revenue": {
+          "type": "number",
+          "default": 0,
+          "description": "Override revenue value for testing"
+        },
+        "codeworld.customers": {
+          "type": "number",
+          "default": 0,
+          "description": "Override customer count for testing"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "prepackage": "npm run compile",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

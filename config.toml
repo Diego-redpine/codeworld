@@ -1,0 +1,19 @@
+# CodeWorld Configuration — Red Pine Kingdom
+# Supabase credentials for live data (optional)
+
+[redpine]
+supabase_url = ""
+supabase_key = ""
+project_path = "/Users/Diego21/redpine-os"
+revenue = 0
+customers = 0
+
+[display]
+side_mode = false
+theme = "cozy"
+
+[web]
+enabled = true
+port = 8765
+host = "0.0.0.0"
+open_browser = false

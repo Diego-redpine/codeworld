@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Node
+node_modules/
+extension/out/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+
+# Large/generated files
+*.svg
+browser-screenshot.png
+preview.html
+ref-frames/
+
+# Playwright test artifacts
+.playwright-mcp/
+*.png
+!webapp/**/*.png
