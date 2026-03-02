@@ -322,13 +322,14 @@
     z-index: 80;
     text-align: center;
     padding: 24px;
+    overflow-y: auto;
     transition: opacity 0.5s ease;
   }
   #disconnected-overlay.hidden { opacity: 0; pointer-events: none; }
   #disconnected-overlay h2 {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--green);
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
   #disconnected-overlay p {
     font-size: 8px;
@@ -346,12 +347,19 @@
     color: var(--amber);
     margin: 4px 0;
   }
+  #disconnected-overlay a {
+    transition: background 0.2s, border-color 0.2s;
+  }
+  #disconnected-overlay a:active {
+    background: rgba(99, 199, 77, 0.25) !important;
+    border-color: var(--green) !important;
+  }
   #disconnected-overlay .dot-pulse {
-    width: 8px; height: 8px;
+    width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--amber);
     animation: pulse 1.5s ease-in-out infinite;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
   @keyframes pulse {
     0%, 100% { opacity: 0.3; transform: scale(0.8); }
@@ -445,15 +453,22 @@
       <div class="dot-pulse"></div>
       <h2>CODEWORLD</h2>
       <p>Red Pine Kingdom</p>
-      <p style="margin-top:16px">Start the server on your machine:</p>
-      <p><code>cd codeworld && .venv/bin/python main.py --headless</code></p>
-      <p style="margin-top:12px">Then open on your browser:</p>
-      <p><code>http://localhost:8765</code></p>
-      <p style="margin-top:12px">Or on your phone (same WiFi):</p>
-      <p><code>http://&lt;your-ip&gt;:8765</code></p>
-      <p style="margin-top:16px;font-size:6px;color:var(--text-dim);max-width:400px">
-        You can also add <code style="font-size:6px">?ws=your-ip:8765</code> to this URL to connect remotely.
-      </p>
+      <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;">
+        <a href="http://localhost:8765" style="display:block;padding:14px 16px;background:rgba(99,199,77,0.12);border:1px solid var(--border);border-radius:8px;text-decoration:none;text-align:left;">
+          <div style="font-size:7px;color:var(--text-dim);margin-bottom:4px;">OPEN ON THIS DEVICE</div>
+          <div style="font-size:9px;color:var(--green);">localhost:8765</div>
+          <div style="font-size:6px;color:var(--text-dim);margin-top:4px;">Run the server first, then tap here</div>
+        </a>
+        <a id="phone-link" href="#" style="display:block;padding:14px 16px;background:rgba(254,174,52,0.08);border:1px solid var(--border);border-radius:8px;text-decoration:none;text-align:left;">
+          <div style="font-size:7px;color:var(--text-dim);margin-bottom:4px;">OPEN ON PHONE (SAME WIFI)</div>
+          <div style="font-size:9px;color:var(--amber);" id="phone-url">http://&lt;your-ip&gt;:8765</div>
+          <div style="font-size:6px;color:var(--text-dim);margin-top:4px;">Server must be running on your computer</div>
+        </a>
+        <div style="padding:14px 16px;background:rgba(24,20,37,0.6);border:1px solid var(--border);border-radius:8px;text-align:left;">
+          <div style="font-size:7px;color:var(--text-dim);margin-bottom:4px;">START THE SERVER</div>
+          <code style="font-size:7px;display:block;word-break:break-all;">python main.py --headless</code>
+        </div>
+      </div>
     </div>
     <div id="canvas-area">
       <div id="canvas-wrap">
