@@ -442,11 +442,15 @@
   <div id="disconnected-overlay">
     <div class="dot-pulse"></div>
     <h2>CODEWORLD</h2>
-    <p>Waiting for the kingdom server...</p>
-    <p style="margin-top:12px">Run this on your machine:</p>
+    <p>Red Pine Kingdom</p>
+    <p style="margin-top:16px">Start the server on your machine:</p>
     <p><code>cd codeworld && .venv/bin/python main.py --headless</code></p>
-    <p style="margin-top:12px;font-size:7px;color:var(--text-dim)">
-      Then reload this page. The kingdom will appear once the server is running.
+    <p style="margin-top:12px">Then open on your browser:</p>
+    <p><code>http://localhost:8765</code></p>
+    <p style="margin-top:12px">Or on your phone (same WiFi):</p>
+    <p><code>http://&lt;your-ip&gt;:8765</code></p>
+    <p style="margin-top:16px;font-size:6px;color:var(--text-dim);max-width:400px">
+      You can also add <code style="font-size:6px">?ws=your-ip:8765</code> to this URL to connect remotely.
     </p>
   </div>
 
@@ -951,7 +955,7 @@
 
     html += '<div class="setting-row"><div><div class="setting-label">WebSocket URL</div>';
     html += '<div class="setting-desc">Server address for the kingdom data</div></div>';
-    html += '<div style="font-size:7px;color:var(--amber)">' + wsUrl + '</div></div>';
+    html += '<div style="font-size:7px;color:var(--amber)">' + (wsUrl || "Not configured") + '</div></div>';
 
     html += '<div class="setting-row"><div><div class="setting-label">Zoom Level</div>';
     html += '<div class="setting-desc">Current zoom: ' + zoom.toFixed(1) + 'x</div></div>';
@@ -991,10 +995,23 @@
 
   // Support ?ws=host:port URL parameter for remote connections
   var params = new URLSearchParams(window.location.search);
-  var wsHost = params.get("ws") || (window.location.hostname + ":" + (window.location.port || "8765"));
-  var wsUrl = "ws://" + wsHost;
+  var wsParam = params.get("ws");
+  var wsUrl;
+  var autoConnect = true;
+  if (wsParam) {
+    // Explicit WebSocket URL provided — always connect
+    wsUrl = (wsParam.indexOf("://") > -1) ? wsParam : "ws://" + wsParam;
+  } else if (window.location.protocol === "https:" && window.location.hostname !== "localhost") {
+    // On HTTPS (e.g., GitHub Pages) — don't auto-connect to ws://
+    // User must provide ?ws=their-ip:8765 or run locally
+    wsUrl = null;
+    autoConnect = false;
+  } else {
+    wsUrl = "ws://" + window.location.hostname + ":" + (window.location.port || "8765");
+  }
 
   function connect() {
+    if (!wsUrl) return; // No WebSocket URL — stay on landing page
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
 
     try {
@@ -1117,7 +1134,9 @@
 
   // ── Init ──────────────────────────────────────────────
   renderSettings();
-  connect();
+  if (autoConnect) {
+    connect();
+  }
 
 })();
 </script>
