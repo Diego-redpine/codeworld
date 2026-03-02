@@ -631,7 +631,7 @@ def run_headless(config: dict, revenue_override=None, customers_override=None):
         while running:
             now = time.monotonic()
 
-            # Animation tick (500ms)
+            # Animation tick (~100ms = 10 FPS)
             tick += 1
             kingdom.tick()
             kingdom.draw(canvas, tick)
@@ -681,7 +681,7 @@ def run_headless(config: dict, revenue_override=None, customers_override=None):
                 except Exception:
                     pass
 
-            time.sleep(0.5)
+            time.sleep(0.1)  # ~10 FPS for smooth animation
     finally:
         renderer.stop()
         print("\nCodeWorld stopped.")
