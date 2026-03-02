@@ -191,6 +191,15 @@ SCAFFOLD_WOOD = _E_BROWN         # (215, 118, 67)
 SCAFFOLD_ROPE = _E_BARK          # (184, 111, 80)
 FOUNDATION = _E_DARK_GRAY        # (90, 105, 136)
 
+# ── Street Furniture ──────────────────────────────────
+BENCH_WOOD = _E_BROWN            # (215, 118, 67)
+BENCH_DARK = _E_DARK_BROWN       # (115, 62, 57)
+TRASHCAN = _E_DARK_GRAY          # (90, 105, 136)
+TRASHCAN_LID = _E_MED_GRAY       # (139, 155, 180)
+POT_TERRACOTTA = _E_MAROON       # (190, 74, 47)
+POT_DARK = _E_DARK_BROWN         # (115, 62, 57)
+SIGN_WOOD = _E_BROWN             # (215, 118, 67)
+
 
 def lerp_color(a: Color, b: Color, t: float) -> Color:
     """Linearly interpolate between two colors."""

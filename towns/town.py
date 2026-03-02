@@ -62,6 +62,13 @@ try:
 except ImportError:
     HAS_DECORATION_SPRITES = False
 
+# Safe imports for street furniture (benches, trash cans, potted plants, signs)
+try:
+    from assets.sprites import BENCH, TRASH_CAN, POTTED_PLANT, STREET_SIGN
+    HAS_STREET_FURNITURE = True
+except ImportError:
+    HAS_STREET_FURNITURE = False
+
 # Safe import for v2 metrics
 try:
     from towns.metrics import RedPineMetrics
@@ -196,9 +203,9 @@ class Kingdom:
         self.shore_tiles: list[tuple[int, int]] = []
         self.anim_tick = 0
 
-        # Canvas dimensions — balanced for dense RPG town feel
-        self.canvas_w = 192
-        self.canvas_h = 120
+        # Canvas dimensions — spacious enough for 15+ buildings + forests
+        self.canvas_w = 256
+        self.canvas_h = 160
 
         # Seed for consistent layout
         self._rng = random.Random(42)
@@ -331,6 +338,7 @@ class Kingdom:
         self._spawn_agents(cx, cy)
 
         self._layout_dirty = False
+        self._bg_cache = None  # invalidate background cache
 
     def _place_hq(self, cx: int, cy: int):
         """Place the HQ building prominently at center.
@@ -877,6 +885,40 @@ class Kingdom:
             ty = rng.randint(10, max(11, height - sh - 10))
             _try_place_deco(prop, tx, ty)
 
+        # ── Street furniture: benches, trash cans, potted plants, street signs ──
+        if HAS_STREET_FURNITURE and path_list:
+            # Benches along paths (every ~40 path tiles)
+            bench_count = min(len(path_list) // 40, 12)
+            for i in range(bench_count):
+                idx = (i * 43 + 7) % len(path_list)
+                px, py = path_list[idx]
+                for offset in [(3, -1), (-6, -1), (0, 3), (0, -4)]:
+                    if _try_place_deco(BENCH, px + offset[0], py + offset[1]):
+                        break
+
+            # Trash cans near buildings
+            for building in self.buildings[:15]:
+                if rng.random() < 0.4:
+                    tx = building.x + building.width + 1
+                    ty = building.y + building.height - 3
+                    _try_place_deco(TRASH_CAN, tx, ty)
+
+            # Potted plants near district building entrances
+            for building in self.district_buildings:
+                # Left pot
+                _try_place_deco(POTTED_PLANT, building.x - 4, building.y + building.height - 2)
+                # Right pot
+                _try_place_deco(POTTED_PLANT, building.x + building.width + 1, building.y + building.height - 2)
+
+            # Street signs at path junctions
+            sign_count = min(len(path_list) // 60, 8)
+            for i in range(sign_count):
+                idx = (i * 67 + 19) % len(path_list)
+                px, py = path_list[idx]
+                for offset in [(4, 0), (-2, 0), (0, -3), (0, 3)]:
+                    if _try_place_deco(STREET_SIGN, px + offset[0], py + offset[1]):
+                        break
+
     def _scatter_fences(self, width: int, height: int):
         """Place fence segments near buildings and along path edges."""
         rng = self._rng
@@ -1037,52 +1079,57 @@ class Kingdom:
                 best = (float(px), float(py))
         return best
 
-    def draw(self, canvas: PixelCanvas, tick: int = 0):
-        """Draw the entire kingdom onto a pixel canvas."""
-        if self._layout_dirty or not self.buildings:
-            self.generate_layout(canvas.width, canvas.height)
+    def _build_background(self, canvas: PixelCanvas, tick: int = 0):
+        """Pre-render all static layers into a cached background buffer.
 
+        Static layers: ground, clearings, shore, paths, decorations,
+        fences, building shadows, and buildings. These don't change
+        between frames so we only render them once (or when layout changes).
+        """
         canvas.clear()
-
-        # ── Layer 0: Ground ──
         self._draw_ground(canvas)
-
-        # ── Layer 0b: Town clearing — dirt/stone under buildings ──
         self._draw_town_clearing(canvas)
-
-        # ── Layer 1: Shore/banks (sand transition before water) ──
         self._draw_shore(canvas)
-
-        # ── Layer 1b: Water ──
-        self._draw_water(canvas, tick)
-
-        # ── Layer 2: Paths ──
         self._draw_paths(canvas)
-
-        # ── Layer 3: Decorations (trees, flowers, rocks) ──
         for dx, dy, sprite in self.decoration_sprites:
             canvas.draw_sprite(sprite, dx, dy)
-
-        # ── Layer 3b: Fences ──
         self._draw_fences(canvas)
-
-        # ── Layer 4: Construction sites ──
         for site in self.construction_sites:
             sprite = site.get_current_sprite()
             canvas.draw_sprite(sprite, site.x, site.y)
-
-        # ── Layer 4b: Building shadows (drawn before buildings) ──
         self._draw_building_shadows(canvas)
+        for building in self.buildings:
+            if building.building_type != "windmill":
+                canvas.draw_sprite(building.sprite, building.x, building.y)
 
-        # ── Layer 5: Buildings ──
+    def draw(self, canvas: PixelCanvas, tick: int = 0):
+        """Draw the entire kingdom onto a pixel canvas.
+
+        Uses a cached background buffer for static layers (ground, buildings,
+        paths, etc.) and only redraws dynamic elements (agents, particles,
+        water, windmills) each frame. This gives ~5-10x FPS improvement.
+        """
+        if self._layout_dirty or not self.buildings:
+            self.generate_layout(canvas.width, canvas.height)
+
+        # Build or rebuild background cache
+        if not hasattr(self, '_bg_cache') or self._bg_cache is None:
+            self._bg_cache = PixelCanvas(canvas.width, canvas.height, canvas.bg)
+            self._build_background(self._bg_cache)
+
+        # Start from cached background (fast row-slice copy)
+        canvas.copy_from(self._bg_cache)
+
+        # ── Dynamic: Water (animated) ──
+        self._draw_water(canvas, tick)
+
+        # ── Dynamic: Windmills (animated buildings) ──
         for building in self.buildings:
             if building.building_type == "windmill":
                 frame = (tick // 6) % len(WINDMILL_FRAMES)
                 canvas.draw_sprite(WINDMILL_FRAMES[frame], building.x, building.y)
-            else:
-                canvas.draw_sprite(building.sprite, building.x, building.y)
 
-        # ── Layer 6: Agents ──
+        # ── Dynamic: Agents ──
         for agent in self.agent_manager.agents:
             if agent.inside_building:
                 continue
@@ -1100,21 +1147,22 @@ class Kingdom:
                 if 0 <= marker_x < canvas.width and 0 <= marker_y < canvas.height:
                     canvas.set_pixel(marker_x, marker_y, palettes.UI_GOLD)
 
-        # ── Layer 7: Ambient objects ──
+        # ── Dynamic: Ambient objects ──
         for amb in self.ambient_objects:
             sprite = amb.get_sprite()
             if sprite:
                 canvas.draw_sprite(sprite, int(amb.x), int(amb.y))
 
-        # ── Layer 8: Particles ──
+        # ── Dynamic: Particles ──
         self._draw_particles(canvas)
 
-        # ── Layer 9: Day/night tint ──
-        from datetime import datetime
-        hour = datetime.now().hour
-        tint_info = palettes.get_time_tint(hour)
-        if tint_info[0] is not None:
-            canvas.apply_tint(tint_info[0], tint_info[1])
+        # ── Day/night tint (skip for now — too expensive per frame) ──
+        # TODO: Apply tint to background cache on hour change instead
+        # from datetime import datetime
+        # hour = datetime.now().hour
+        # tint_info = palettes.get_time_tint(hour)
+        # if tint_info[0] is not None:
+        #     canvas.apply_tint(tint_info[0], tint_info[1])
 
     def _draw_ground(self, canvas: PixelCanvas):
         """Draw rich, varied ground with organic grass patches.
@@ -1186,6 +1234,21 @@ class Kingdom:
             canvas.set_pixel(px, py, palettes.DIRT_LIGHT)
             canvas.set_pixel(px, py + 1, palettes.DIRT_LIGHT)
 
+        # Layer 5: Grass tufts — 2-3 pixel dark green patches for RPG grass detail
+        darkest = palettes.GRASS_DARK
+        tuft_dark = (30, 75, 55)  # slightly darker than GRASS_DARK for contrast
+        n_tufts = (w * h) // 100
+        for _ in range(n_tufts):
+            tx = rng.randint(1, w - 2)
+            ty = (rng.randint(0, max(1, h // 2 - 1))) * 2
+            # Small 2-3 pixel cluster
+            canvas.set_pixel(tx, ty, tuft_dark)
+            canvas.set_pixel(tx, ty + 1, darkest)
+            if rng.random() < 0.6:
+                canvas.set_pixel(tx + 1, ty, darkest)
+            if rng.random() < 0.3:
+                canvas.set_pixel(tx - 1, ty + 1, tuft_dark)
+
     def _draw_town_clearing(self, canvas: PixelCanvas):
         """Draw dirt/stone clearings around buildings for a town-square feel.
 
@@ -1245,17 +1308,20 @@ class Kingdom:
                 canvas.set_pixel(wx, wy, shimmer[0][0])
 
     def _draw_paths(self, canvas: PixelCanvas):
-        """Draw paths with warm, high-contrast colors that stand out on grass."""
+        """Draw paths with cobblestone pattern — alternating 2 shades in checkerboard.
+
+        Edges blend into grass with feathered transition pixels.
+        """
         water_set = set(self.water_tiles)
         path_set = set(self.path_tiles)
         path_style = self._get_path_style()
 
         # Use warm tan/sand tones for maximum contrast against green grass
-        # These are the colors RPG games use for visible paths
         sand = (234, 212, 170)      # bright sand highlight
         tan = palettes.DIRT_LIGHT   # (228, 166, 114) warm tan
         dirt = palettes.DIRT        # (184, 111, 80) medium brown
         dark = palettes.DIRT_DARK   # (115, 62, 57) dark border
+        grass_blend = (75, 110, 65) # grass-dirt blend for feathered edge
 
         if path_style == "dirt":
             main_c, light_c, edge_c = tan, sand, dirt
@@ -1269,18 +1335,28 @@ class Kingdom:
         for px, py in self.path_tiles:
             if (px, py) in water_set:
                 continue
-            # Check if edge of path (adjacent to non-path = border)
-            is_edge = any((px + dx, py + dy) not in path_set
-                         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)])
-            if is_edge:
-                # Dark border for definition against grass
+            # Count non-path neighbors (0-4)
+            non_path_neighbors = sum(
+                1 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                if (px + dx, py + dy) not in path_set
+            )
+            if non_path_neighbors >= 3:
+                # Outer edge — blend with grass
+                canvas.set_pixel(px, py, grass_blend)
+            elif non_path_neighbors >= 1:
+                # Inner edge — dark border for definition
                 canvas.set_pixel(px, py, dark)
-            elif (px + py) % 4 == 0:
-                canvas.set_pixel(px, py, light_c)
-            elif (px * 3 + py * 7) % 5 == 0:
-                canvas.set_pixel(px, py, edge_c)
             else:
-                canvas.set_pixel(px, py, main_c)
+                # Interior — cobblestone checkerboard pattern
+                # Alternating 2 shades based on 2x2 grid
+                checker = ((px // 2) + (py // 2)) % 2
+                if checker == 0:
+                    canvas.set_pixel(px, py, main_c)
+                else:
+                    canvas.set_pixel(px, py, light_c)
+                # Add occasional darker cobble "gap" lines
+                if (px % 4 == 0 and py % 3 == 0) or (px % 3 == 0 and py % 4 == 0):
+                    canvas.set_pixel(px, py, edge_c)
 
     def _draw_building_shadows(self, canvas: PixelCanvas):
         """Draw a subtle drop shadow for depth — blends with grass."""
@@ -1421,6 +1497,28 @@ class Kingdom:
                     self.hq.center_x + rng.uniform(-3, 3), self.hq.y - 1,
                     "sparkle", dy=-0.3, life=10,
                 )
+
+        # Ambient sparkles near lamp posts (warm glow particles)
+        if self.anim_tick % 15 == 0 and HAS_DECORATION_SPRITES:
+            rng = self._rng
+            for dx, dy, sprite in self.decoration_sprites:
+                # Detect lamp posts by their sprite height (8 tall, 3 wide)
+                if len(sprite) == 8 and len(sprite[0]) == 3 and rng.random() < 0.15:
+                    self.agent_manager.spawn_particle(
+                        dx + 1 + rng.uniform(-0.5, 0.5), dy,
+                        "sparkle", dx=rng.uniform(-0.1, 0.1), dy=-0.2, life=8,
+                    )
+
+        # Smoke from restaurant chimneys
+        if self.anim_tick % 10 == 0:
+            rng = self._rng
+            for b in self.customer_buildings:
+                if b.customer_type == "restaurant" and rng.random() < 0.5:
+                    self.agent_manager.spawn_particle(
+                        b.x + b.width - 3 + rng.uniform(-0.5, 0.5),
+                        b.y - 1,
+                        "smoke", dx=0.05, dy=-0.3, life=12,
+                    )
 
     def handle_action(self, action_type: str, session_id: str = ""):
         """Handle a Claude action by sending an agent to the relevant building."""

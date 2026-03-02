@@ -116,6 +116,9 @@ class Agent:
                 self.state = "idle"
                 self.idle_timer = random.randint(10, 30)
         elif self.state == "idle":
+            # Idle look-around: occasionally flip facing direction
+            if self.anim_tick % 20 == 0 and random.random() < 0.3:
+                self.facing_right = not self.facing_right
             self.idle_timer -= 1
             if self.idle_timer <= 0:
                 self._pick_new_destination(path_tiles)
@@ -170,12 +173,15 @@ class Agent:
         self.facing_right = dx > 0
 
     def _move_toward_target(self):
-        """Move toward the target position."""
+        """Move toward the target position with smooth interpolation.
+
+        Uses ease-out deceleration when approaching target for natural movement.
+        """
         dx = self.target_x - self.x
         dy = self.target_y - self.y
         dist = (dx ** 2 + dy ** 2) ** 0.5
 
-        if dist < self.speed:
+        if dist < self.speed * 0.5:
             # Arrived at target
             self.x = self.target_x
             self.y = self.target_y
@@ -186,10 +192,16 @@ class Agent:
                 self.idle_timer = random.randint(10, 30)
             return
 
+        # Smooth deceleration when close to target (ease-out)
+        effective_speed = self.speed
+        if dist < self.speed * 4:
+            # Slow down as we approach (smooth stop)
+            effective_speed = max(0.2, self.speed * (dist / (self.speed * 4)))
+
         # Normalize and move
         nx, ny = dx / dist, dy / dist
-        self.x += nx * self.speed
-        self.y += ny * self.speed
+        self.x += nx * effective_speed
+        self.y += ny * effective_speed
         self.facing_right = dx > 0
 
     def send_to(self, x: float, y: float, work_ticks: int = 8, waypoints: list[tuple[float, float]] | None = None):

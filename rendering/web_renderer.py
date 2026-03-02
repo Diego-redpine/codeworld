@@ -262,6 +262,9 @@ class WebRenderer:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._latest_frame: bytes | None = None
+        # Pre-cache HTML to avoid disk I/O in the asyncio event loop
+        self._cached_html: bytes | None = None
+        self._sending = False  # Throttle: skip frames while a send is in flight
 
     # ── public API ────────────────────────────────────────────
 
@@ -293,7 +296,8 @@ class WebRenderer:
     def send_frame(self, frame_bytes: bytes):
         """Thread-safe: broadcast frame to all connected browsers."""
         self._latest_frame = frame_bytes
-        if self._loop and self._connections:
+        if self._loop and self._connections and not self._sending:
+            self._sending = True
             self._loop.call_soon_threadsafe(
                 self._loop.create_task,
                 self._broadcast(frame_bytes),
@@ -354,13 +358,16 @@ class WebRenderer:
         if request.headers.get("Upgrade", "").lower() == "websocket":
             return None
 
-        # Serve the interactive web app from webapp/index.html
-        webapp_file = _WEBAPP_DIR / "index.html"
-        if webapp_file.exists():
-            body = webapp_file.read_bytes()
-        else:
-            # Fallback to embedded HTML if webapp file not found
-            body = KINGDOM_HTML.replace("{{PORT}}", str(self._port)).encode("utf-8")
+        # Serve the interactive web app (cached in memory)
+        if self._cached_html is None:
+            webapp_file = _WEBAPP_DIR / "index.html"
+            if webapp_file.exists():
+                self._cached_html = webapp_file.read_bytes()
+            else:
+                self._cached_html = KINGDOM_HTML.replace(
+                    "{{PORT}}", str(self._port)
+                ).encode("utf-8")
+        body = self._cached_html
 
         headers = Headers(
             [
@@ -388,3 +395,6 @@ class WebRenderer:
     async def _broadcast(self, data: bytes):
         """Send frame to all connected WebSocket clients."""
         ws_broadcast(self._connections, data)
+        self._sending = False
+        # Yield to event loop so HTTP requests can be processed
+        await asyncio.sleep(0)

@@ -573,33 +573,30 @@ def run_headless(config: dict, revenue_override=None, customers_override=None):
         },
     )
 
-    # Fetch initial metrics
-    metrics = data_source.fetch_metrics_sync()
+    # Fetch initial metrics (use fallback first, then async update from Supabase)
+    from towns.metrics import RedPineMetrics
+    metrics = RedPineMetrics()
+    metrics.revenue = redpine.get("revenue", 0)
+    metrics.customer_count = redpine.get("customers", 0)
 
-    # Apply CLI overrides directly to metrics (in case Supabase returned different values)
+    # Apply CLI overrides
     if revenue_override is not None:
         metrics.revenue = revenue_override
     if customers_override is not None:
         metrics.customer_count = customers_override
 
-    # Scan codebase
+    # Scan codebase (defer heavy git scan to background thread)
     project_path = redpine.get("project_path", "")
     watcher = None
     if project_path and Path(project_path).exists():
-        codebase = scan_codebase(project_path)
-        metrics.codebase_files = codebase["codebase_files"]
-        metrics.codebase_loc = codebase["codebase_loc"]
-        git = get_git_info(project_path)
-        metrics.git_branch = git.get("branch", "")
-        metrics.git_commits_30d = git.get("commits_30d", 0)
         watcher = TranscriptWatcher(project_path)
 
     # Create kingdom
     kingdom = Kingdom(metrics=metrics)
     kingdom.name = "Red Pine Kingdom"
 
-    # Create canvas — balanced size for dense RPG town feel
-    canvas = PixelCanvas(192, 120)
+    # Create canvas — spacious enough for 15+ buildings + forests
+    canvas = PixelCanvas(256, 160)
 
     # Start web renderer
     web_cfg = config.get("web", {})
@@ -627,45 +624,84 @@ def run_headless(config: dict, revenue_override=None, customers_override=None):
     last_codebase = 0
     last_transcript = 0
 
+    # Background I/O threads — never block the render loop
+    import threading
+    _pending_metrics = None
+    _pending_codebase = None
+    _io_lock = threading.Lock()
+
+    def _bg_fetch_supabase():
+        nonlocal _pending_metrics
+        try:
+            m = data_source.fetch_metrics_sync()
+            with _io_lock:
+                _pending_metrics = m
+        except Exception:
+            pass
+
+    def _bg_scan_codebase():
+        nonlocal _pending_codebase
+        try:
+            cb = scan_codebase(project_path)
+            git = get_git_info(project_path)
+            with _io_lock:
+                _pending_codebase = (cb, git)
+        except Exception:
+            pass
+
+    # Kick off initial fetches in background immediately
+    threading.Thread(target=_bg_fetch_supabase, daemon=True).start()
+    if project_path:
+        threading.Thread(target=_bg_scan_codebase, daemon=True).start()
+
     try:
         while running:
             now = time.monotonic()
 
-            # Animation tick (~100ms = 10 FPS)
+            # Animation tick
             tick += 1
             kingdom.tick()
             kingdom.draw(canvas, tick)
             renderer.send_frame(canvas.to_rgb_bytes())
-            renderer.send_scene(kingdom.to_scene_manifest())
+            # Send scene manifest less often (every 10th frame) — it's metadata
+            if tick % 10 == 0:
+                renderer.send_scene(kingdom.to_scene_manifest())
 
-            # Supabase polling (30s)
-            if now - last_supabase > 30:
-                last_supabase = now
-                try:
-                    new_metrics = data_source.fetch_metrics_sync()
+            # Apply pending background results (non-blocking)
+            with _io_lock:
+                if _pending_metrics is not None:
+                    new_metrics = _pending_metrics
+                    _pending_metrics = None
                     if kingdom.metrics:
                         new_metrics.codebase_files = kingdom.metrics.codebase_files
                         new_metrics.codebase_loc = kingdom.metrics.codebase_loc
                         new_metrics.git_branch = kingdom.metrics.git_branch
                         new_metrics.git_commits_30d = kingdom.metrics.git_commits_30d
                     kingdom.update_metrics(new_metrics)
-                except Exception:
-                    pass
+                    if revenue_override is not None:
+                        kingdom.metrics.revenue = revenue_override
+                    if customers_override is not None:
+                        kingdom.metrics.customer_count = customers_override
 
-            # Codebase scanning (5s)
-            if project_path and now - last_codebase > 5:
-                last_codebase = now
-                try:
-                    codebase = scan_codebase(project_path)
-                    kingdom.metrics.codebase_files = codebase["codebase_files"]
-                    kingdom.metrics.codebase_loc = codebase["codebase_loc"]
-                    git = get_git_info(project_path)
+                if _pending_codebase is not None:
+                    cb, git = _pending_codebase
+                    _pending_codebase = None
+                    kingdom.metrics.codebase_files = cb["codebase_files"]
+                    kingdom.metrics.codebase_loc = cb["codebase_loc"]
                     kingdom.metrics.git_branch = git.get("branch", "")
                     kingdom.metrics.git_commits_30d = git.get("commits_30d", 0)
-                except Exception:
-                    pass
 
-            # Transcript polling (2s)
+            # Schedule background Supabase polling (30s)
+            if now - last_supabase > 30:
+                last_supabase = now
+                threading.Thread(target=_bg_fetch_supabase, daemon=True).start()
+
+            # Schedule background codebase scanning (60s)
+            if project_path and now - last_codebase > 60:
+                last_codebase = now
+                threading.Thread(target=_bg_scan_codebase, daemon=True).start()
+
+            # Transcript polling (2s — lightweight file check, OK on main thread)
             if watcher and now - last_transcript > 2:
                 last_transcript = now
                 try:
@@ -681,7 +717,7 @@ def run_headless(config: dict, revenue_override=None, customers_override=None):
                 except Exception:
                     pass
 
-            time.sleep(0.1)  # ~10 FPS for smooth animation
+            time.sleep(0.05)  # Target ~10 FPS server-side, browser receives ~6
     finally:
         renderer.stop()
         print("\nCodeWorld stopped.")

@@ -40,6 +40,8 @@ from assets.palettes import (
     COO_CAPE, RECEPTIONIST_APRON, CONTENT_SHIRT, REVIEW_VEST, ROUTE_SASH, WORKER_HELMET,
     SCAFFOLD_WOOD, SCAFFOLD_ROPE, FOUNDATION,
     UI_GOLD,
+    BENCH_WOOD, BENCH_DARK, TRASHCAN, TRASHCAN_LID,
+    POT_TERRACOTTA, POT_DARK, SIGN_WOOD,
 )
 
 # Type alias
@@ -89,58 +91,62 @@ TILE_WATER_SHIMMER_FRAMES = [
 # TREES (various sizes)
 # ═══════════════════════════════════════════════════════════
 
-# Pine tree — 12 wide x 18 tall — lush conical pine with 4 green shades
+# Pine tree — 12 wide x 19 tall — lush conical pine with 4 green shades + dark outline
 GD = GRASS_DARK
 GN = (25, 60, 50)    # darkest pine (Endesga darkest green)
 GP = (38, 92, 66)    # pine green (Endesga dark green)
 GL = (62, 137, 72)   # light pine (Endesga med green)
 GH = (99, 199, 77)   # pine highlight (Endesga bright green)
 TK = LOG             # trunk
+TB2 = (75, 48, 35)   # bark highlight (lighter brown)
+_TO = OL_C           # tree outline for crisp edges
 
 TREE_PINE: Sprite = [
-    [_, _, _, _, _, _, GH, _, _, _, _, _],
-    [_, _, _, _, _, GH, GL, GH, _, _, _, _],
-    [_, _, _, _, GH, GL, GP, GL, GH, _, _, _],
-    [_, _, _, GH, GL, GP, GN, GP, GL, GH, _, _],
-    [_, _, GH, GL, GP, GN, GP, GN, GP, GL, GH, _],
-    [_, GH, GL, GP, GN, GP, GN, GP, GN, GP, GL, GH],
-    [_, _, _, GL, GP, GN, GP, GN, GP, GL, _, _],
-    [_, _, GH, GL, GP, GN, GP, GN, GP, GL, GH, _],
-    [_, GH, GL, GP, GN, GP, GL, GP, GN, GP, GL, GH],
-    [GH, GL, GP, GN, GP, GN, GP, GN, GP, GN, GP, GL],
-    [_, _, GL, GP, GN, GP, GN, GP, GN, GP, GL, _],
-    [_, GH, GL, GP, GN, GP, GL, GP, GN, GP, GL, GH],
-    [GH, GL, GP, GN, GP, GN, GP, GN, GP, GN, GP, GL],
-    [GL, GP, GN, GP, GL, GP, GN, GP, GL, GP, GN, GP],
-    [_, GL, GP, GN, GP, GN, GP, GN, GP, GN, GP, GL],
-    [_, _, _, _, _, TK, TK, _, _, _, _, _],
-    [_, _, _, _, _, TK, TK, _, _, _, _, _],
-    [_, _, _, _, _, TK, TK, _, _, _, _, _],
+    [_, _, _, _, _, _, _TO, _, _, _, _, _],
+    [_, _, _, _, _, _TO, GH, _TO, _, _, _, _],
+    [_, _, _, _, _TO, GH, GL, GH, _TO, _, _, _],
+    [_, _, _, _TO, GH, GL, GP, GL, GH, _TO, _, _],
+    [_, _, _TO, GH, GL, GP, GN, GP, GL, GH, _TO, _],
+    [_, _TO, GH, GL, GP, GN, GP, GN, GP, GL, GH, _TO],
+    [_, _, _, _TO, GL, GP, GN, GP, GL, _TO, _, _],
+    [_, _, _TO, GH, GL, GP, GN, GP, GL, GH, _TO, _],
+    [_, _TO, GH, GL, GP, GN, GL, GP, GN, GL, GH, _TO],
+    [_TO, GH, GL, GP, GN, GP, GN, GP, GN, GP, GL, _TO],
+    [_, _, _TO, GL, GP, GN, GP, GN, GP, GL, _TO, _],
+    [_, _TO, GH, GL, GP, GN, GL, GP, GN, GL, GH, _TO],
+    [_TO, GH, GL, GP, GN, GP, GN, GP, GN, GP, GL, _TO],
+    [_TO, GL, GP, GN, GP, GL, GP, GN, GP, GL, GP, _TO],
+    [_, _TO, GL, GP, GN, GP, GN, GP, GN, GP, _TO, _],
+    [_, _, _, _, _TO, TK, TK, _TO, _, _, _, _],
+    [_, _, _, _, _TO, TK, TB2, _TO, _, _, _, _],
+    [_, _, _, _, _TO, TK, TK, _TO, _, _, _, _],
+    [_, _, _, _, GN, GN, GN, GN, _, _, _, _],
 ]
 
-# Oak tree — 14 wide x 16 tall — big bushy oak with round canopy, 4 shades
+# Oak tree — 14 wide x 16 tall — big bushy oak with round canopy, 4 shades + outline
 OD = (25, 60, 50)    # dark oak leaf (Endesga darkest green)
 OG = (38, 92, 66)    # oak green (Endesga dark green)
-OL = (62, 137, 72)   # light oak leaf (Endesga med green)
+# Note: OL is used for outline in villagers, so use O_L for oak light
+O_L = (62, 137, 72)  # light oak leaf (Endesga med green)
 OH = (99, 199, 77)   # oak highlight (Endesga bright green)
 
 TREE_OAK: Sprite = [
-    [_, _, _, _, _, OL, OH, OL, OH, _, _, _, _, _],
-    [_, _, _, OL, OH, OG, OL, OG, OH, OL, _, _, _, _],
-    [_, _, OL, OG, OH, OG, OD, OG, OH, OG, OL, _, _, _],
-    [_, OL, OG, OD, OG, OH, OG, OH, OG, OD, OG, OL, _, _],
-    [OL, OG, OD, OG, OL, OG, OD, OG, OL, OG, OD, OG, OL, _],
-    [OG, OD, OG, OL, OG, OD, OG, OD, OG, OL, OG, OD, OG, _],
-    [OL, OG, OL, OG, OD, OG, OL, OG, OD, OG, OL, OG, OL, _],
-    [OG, OD, OG, OL, OG, OL, OG, OL, OG, OL, OG, OD, OG, _],
-    [OL, OG, OD, OG, OL, OG, OD, OG, OL, OG, OD, OG, OL, _],
-    [_, OL, OG, OD, OG, OH, OG, OH, OG, OD, OG, OL, _, _],
-    [_, _, OL, OG, OL, OG, OD, OG, OL, OG, OL, _, _, _],
-    [_, _, _, OL, OG, OL, OG, OL, OG, OL, _, _, _, _],
-    [_, _, _, _, _, _, TK, TK, _, _, _, _, _, _],
-    [_, _, _, _, _, _, TK, TK, _, _, _, _, _, _],
-    [_, _, _, _, _, _, TK, TK, _, _, _, _, _, _],
-    [_, _, _, _, _, _, _, _, _, _, _, _, _, _],
+    [_, _, _, _, _, _TO, OH, O_L, _TO, _, _, _, _, _],
+    [_, _, _, _TO, OH, OG, O_L, OG, OH, _TO, _, _, _, _],
+    [_, _, _TO, OG, OH, OG, OD, OG, OH, OG, _TO, _, _, _],
+    [_, _TO, OG, OD, OG, OH, OG, OH, OG, OD, OG, _TO, _, _],
+    [_TO, OG, OD, OG, O_L, OG, OD, OG, O_L, OG, OD, OG, _TO, _],
+    [_TO, OD, OG, O_L, OG, OD, OG, OD, OG, O_L, OG, OD, _TO, _],
+    [_TO, OG, O_L, OG, OD, OG, O_L, OG, OD, OG, O_L, OG, _TO, _],
+    [_TO, OD, OG, O_L, OG, O_L, OG, O_L, OG, O_L, OG, OD, _TO, _],
+    [_TO, OG, OD, OG, O_L, OG, OD, OG, O_L, OG, OD, OG, _TO, _],
+    [_, _TO, OG, OD, OG, OH, OG, OH, OG, OD, OG, _TO, _, _],
+    [_, _, _TO, OG, O_L, OG, OD, OG, O_L, OG, _TO, _, _, _],
+    [_, _, _, _TO, OG, O_L, OG, O_L, OG, _TO, _, _, _, _],
+    [_, _, _, _, _, _TO, TK, TK, _TO, _, _, _, _, _],
+    [_, _, _, _, _, _TO, TK, TB2, _TO, _, _, _, _, _],
+    [_, _, _, _, _, _TO, TK, TK, _TO, _, _, _, _, _],
+    [_, _, _, _, _, GN, GN, GN, GN, _, _, _, _, _],
 ]
 
 # Willow tree — 12 wide x 18 tall (weeping willow with droopy branches)
@@ -167,30 +173,30 @@ TREE_WILLOW: Sprite = [
     [_, _, _, WL_G, _, TK, TK, _, WL_G, _, _, _],
     [_, _, _, _, _, TK, TK, _, _, _, _, _],
     [_, _, _, _, _, TK, TK, _, _, _, _, _],
-    [_, _, _, _, _, _, _, _, _, _, _, _],
+    [_, _, _, _, GN, GN, GN, GN, _, _, _, _],
 ]
 
-# Maple tree — 10 wide x 14 tall (autumn-colored, bigger canopy)
+# Maple tree — 10 wide x 14 tall (autumn-colored, bigger canopy) + outline
 MP_R = (228, 59, 68)   # maple red (Endesga red)
 MP_O = (247, 118, 34)  # maple orange (Endesga orange)
 MP_Y = (254, 174, 52)  # maple yellow (Endesga yellow-orange)
 MP_D = (162, 38, 51)   # maple dark (Endesga dark red)
 
 TREE_MAPLE: Sprite = [
-    [_, _, _, MP_O, MP_Y, MP_R, MP_O, _, _, _],
-    [_, _, MP_R, MP_Y, MP_O, MP_Y, MP_R, MP_O, _, _],
-    [_, MP_O, MP_D, MP_R, MP_Y, MP_O, MP_D, MP_R, MP_O, _],
-    [MP_R, MP_O, MP_Y, MP_D, MP_R, MP_Y, MP_O, MP_Y, MP_D, MP_R],
-    [MP_D, MP_R, MP_O, MP_R, MP_Y, MP_O, MP_D, MP_R, MP_O, MP_D],
-    [MP_O, MP_D, MP_Y, MP_O, MP_D, MP_R, MP_Y, MP_D, MP_R, MP_O],
-    [MP_R, MP_O, MP_D, MP_R, MP_Y, MP_O, MP_D, MP_R, MP_O, MP_D],
-    [_, MP_D, MP_R, MP_O, MP_D, MP_Y, MP_R, MP_O, MP_D, _],
-    [_, _, MP_O, MP_D, MP_R, MP_D, MP_O, MP_D, _, _],
-    [_, _, _, MP_R, MP_D, MP_O, MP_D, _, _, _],
-    [_, _, _, _, TK, TK, _, _, _, _],
-    [_, _, _, _, TK, TK, _, _, _, _],
-    [_, _, _, _, TK, TK, _, _, _, _],
-    [_, _, _, _, _, _, _, _, _, _],
+    [_, _, _, _TO, MP_Y, MP_R, _TO, _, _, _],
+    [_, _, _TO, MP_Y, MP_O, MP_Y, MP_R, _TO, _, _],
+    [_, _TO, MP_D, MP_R, MP_Y, MP_O, MP_D, MP_R, _TO, _],
+    [_TO, MP_O, MP_Y, MP_D, MP_R, MP_Y, MP_O, MP_Y, MP_D, _TO],
+    [_TO, MP_R, MP_O, MP_R, MP_Y, MP_O, MP_D, MP_R, MP_O, _TO],
+    [_TO, MP_D, MP_Y, MP_O, MP_D, MP_R, MP_Y, MP_D, MP_R, _TO],
+    [_TO, MP_O, MP_D, MP_R, MP_Y, MP_O, MP_D, MP_R, MP_O, _TO],
+    [_, _TO, MP_R, MP_O, MP_D, MP_Y, MP_R, MP_O, _TO, _],
+    [_, _, _TO, MP_D, MP_R, MP_D, MP_O, _TO, _, _],
+    [_, _, _, _TO, MP_D, MP_O, _TO, _, _, _],
+    [_, _, _, _, _TO, TK, _TO, _, _, _],
+    [_, _, _, _, _TO, TB2, _TO, _, _, _],
+    [_, _, _, _, _TO, TK, _TO, _, _, _],
+    [_, _, _, _, GN, GN, GN, _, _, _],
 ]
 
 # Bush — 7 wide x 5 tall — lush round bush
@@ -423,6 +429,51 @@ FLOWER_BED: Sprite = [
     [FLOWER_RED, GRASS_LIGHT, FLOWER_YELLOW, GRASS_LIGHT, FLOWER_BLUE, FLOWER_PINK],
     [GRASS, FLOWER_PINK, GRASS, FLOWER_RED, GRASS, FLOWER_YELLOW],
     [DIRT_LIGHT, DIRT, DIRT_LIGHT, DIRT, DIRT_LIGHT, DIRT],
+]
+
+# ── Bench (5w × 3h) — wooden park bench ──
+_BN_W = BENCH_WOOD
+_BN_D = BENCH_DARK
+
+BENCH: Sprite = [
+    [OL_C, _BN_W, _BN_W, _BN_W, OL_C],
+    [OL_C, _BN_D, _BN_W, _BN_D, OL_C],
+    [_BN_D, _, _, _, _BN_D],
+]
+
+# ── Trash Can (2w × 4h) — metal bin ──
+_TC = TRASHCAN
+_TL = TRASHCAN_LID
+
+TRASH_CAN: Sprite = [
+    [_TL, _TL],
+    [OL_C, OL_C],
+    [_TC, _TC],
+    [OL_C, OL_C],
+]
+
+# ── Potted Plant (3w × 4h) — terracotta pot with plant ──
+_PT_T = POT_TERRACOTTA
+_PT_D = POT_DARK
+_PT_G = GRASS_LIGHT
+_PT_GD = GRASS
+
+POTTED_PLANT: Sprite = [
+    [_, _PT_G, _],
+    [_PT_GD, _PT_G, _PT_GD],
+    [OL_C, _PT_T, OL_C],
+    [_, _PT_D, _],
+]
+
+# ── Street Sign (1w × 5h) — thin post with sign ──
+_SSG = SIGN_WOOD
+
+STREET_SIGN: Sprite = [
+    [_SSG],
+    [OL_C],
+    [OL_C],
+    [OL_C],
+    [OL_C],
 ]
 
 
@@ -709,41 +760,45 @@ FENCE_POST: Sprite = [
 # CUSTOMER BUILDING SPRITES (v2 — larger, more detailed)
 # ═══════════════════════════════════════════════════════════
 
-# ── Beauty Shop (10w × 10h) ────────────────────────────
+# ── Beauty Shop (18w × 16h) — pink/purple barber pole, mirror sign ──
 SP = SALON_PINK
 SS_S = SALON_STRIPE  # renamed to avoid conflict with SS (STONE)
+_PUR = ROOF_PURPLE   # purple accent
+_PPD = ROOF_PURPLE_DARK
 
 BUILDING_BEAUTY: Sprite = [
     [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _],
     [_, _, OL_C, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, OL_C, _, _],
     [_, _, OL_C, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, SS_S, SP, OL_C, _, _],
+    [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _],
     [_, _, OL_C, WW, WD, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WD, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WG, WG, WG, WW, WW, WW, WG, WG, WG, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WG, WG, WG, WW, WW, WW, WG, WG, WG, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WG, WG, WG, WW, WW, WW, WG, WG, WG, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WD, WD, WD, WW, WW, WW, WD, WD, WD, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WW, WW, WW, WW, SP, SP, WW, WW, WW, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WW, WW, WW, WW, SP, SP, WW, WW, WW, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WW, WW, WW, WW, DR, DR, WW, WW, WW, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, WW, WW, WW, WW, WW, DR, DR, WW, WW, WW, WW, WW, WW, OL_C, _, _],
-    [_, _, OL_C, WW, SP, SP, WW, WW, WW, WW, WW, WW, WW, WW, SP, SP, WW, OL_C, _, _],
+    [_, _, OL_C, WW, WG, WG, WG, WW, _PUR, OL_C, _PUR, WW, WG, WG, WG, WW, WW, OL_C, _, _],
+    [_, _, OL_C, WW, WG, WG, WG, WW, OL_C, SP, OL_C, WW, WG, WG, WG, WW, WW, OL_C, _, _],
+    [_, _, OL_C, WW, WG, WG, WG, WW, _PUR, OL_C, _PUR, WW, WG, WG, WG, WW, WW, OL_C, _, _],
+    [_, _, OL_C, WW, WD, WD, WD, WW, WW, WW, WW, WW, WD, WD, WD, WW, WW, OL_C, _, _],
+    [_, _, OL_C, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, OL_C, _, _],
+    [_, _, OL_C, WW, SP, SS_S, SP, WW, WW, DR, DR, WW, WW, SP, SS_S, SP, WW, OL_C, _, _],
+    [_, _, OL_C, WW, SS_S, SP, SS_S, WW, WW, DR, DR, WW, WW, SS_S, SP, SS_S, WW, OL_C, _, _],
+    [_, _, OL_C, WW, SP, SS_S, SP, WW, WW, WW, WW, WW, WW, SP, SS_S, SP, WW, OL_C, _, _],
     [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
 ]
 
-# ── Restaurant (11w × 11h) ────────────────────────────
+# ── Restaurant (16w × 16h) — red awning, chimney with smoke pixels ──
 RW = RESTAURANT_WARM
 RC_C = RESTAURANT_CHIMNEY
+_SMK = SMOKE_LIGHT   # smoke from chimney
 
 BUILDING_RESTAURANT: Sprite = [
-    [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, OL_C, OL_C, _, _],
-    [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, RC_C, RC_C, _, _],
-    [_, _, OL_C, RTD, RT, RT, RTL, RT, RT, RTL, RT, RT, RTL, RT, RTD, OL_C, RC_C, RC_C, _, _],
-    [_, _, OL_C, RT, RTL, RT, RTL, RT, RTL, RT, RTL, RT, RTL, RT, RT, OL_C, _, _, _, _],
+    [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, OL_C, _SMK, _, _],
+    [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, RC_C, OL_C, _, _],
+    [_, _, OL_C, RD, RR, RR, RL, RR, RR, RL, RR, RR, RL, RR, RD, OL_C, RC_C, OL_C, _, _],
+    [_, _, OL_C, RR, RL, RR, RL, RR, RL, RR, RL, RR, RL, RR, RR, OL_C, _, _, _, _],
+    [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _, _, _],
     [_, _, OL_C, WW, WD, WW, WW, WW, WW, WW, WW, WW, WW, WD, WW, OL_C, _, _, _, _],
     [_, _, OL_C, WW, WG, WG, WW, RW, RW, RW, WW, WW, WG, WG, WW, OL_C, _, _, _, _],
-    [_, _, OL_C, WW, WG, WG, WW, RW, RW, RW, WW, WW, WG, WG, WW, OL_C, _, _, _, _],
+    [_, _, OL_C, WW, WG, WG, WW, RW, WG, RW, WW, WW, WG, WG, WW, OL_C, _, _, _, _],
     [_, _, OL_C, WW, WD, WD, WW, WW, WW, WW, WW, WW, WD, WD, WW, OL_C, _, _, _, _],
     [_, _, OL_C, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, WW, OL_C, _, _, _, _],
     [_, _, OL_C, WW, WW, WW, DR, DR, WW, WG, WG, WG, WW, WW, WW, OL_C, _, _, _, _],
@@ -752,27 +807,26 @@ BUILDING_RESTAURANT: Sprite = [
     [_, _, _, _, _, _, _, _, _, _, _, _, RW, _, _, RW, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, WD, _, _, WD, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
-    [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
 ]
 
-# ── Gym / Fitness (12w × 10h) ─────────────────────────
+# ── Gym / Fitness (18w × 16h) — blue accents, dumbbell sign ──
 GB = GYM_BLUE
 GS = GYM_STEEL
 
 BUILDING_FITNESS: Sprite = [
     [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _],
     [_, _, OL_C, GB, GB, GB, GB, GB, GB, GB, GB, GB, GB, GB, GB, GB, GB, OL_C, _, _],
-    [_, _, OL_C, GB, GS, GB, GB, GB, GB, GB, GB, GB, GB, GB, GS, GB, GB, OL_C, _, _],
-    [_, _, OL_C, SS, SD, SS, SS, SS, SS, SS, SS, SS, SS, SS, SD, SS, SS, OL_C, _, _],
+    [_, _, OL_C, GB, GS, GS, GB, GB, GB, GB, GB, GB, GB, GS, GS, GB, GB, OL_C, _, _],
+    [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _],
+    [_, _, OL_C, SS, SD, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SD, SS, OL_C, _, _],
+    [_, _, OL_C, SS, GS, GS, SS, GS, OL_C, OL_C, OL_C, GS, SS, GS, GS, SS, SS, OL_C, _, _],
     [_, _, OL_C, SS, GS, GS, SS, SS, SS, GB, SS, SS, SS, GS, GS, SS, SS, OL_C, _, _],
-    [_, _, OL_C, SS, GS, GS, SS, SS, SS, GB, SS, SS, SS, GS, GS, SS, SS, OL_C, _, _],
-    [_, _, OL_C, SS, SD, SD, SS, SS, SS, SS, SS, SS, SS, SD, SD, SS, SS, OL_C, _, _],
+    [_, _, OL_C, SS, SD, SD, SS, GS, OL_C, OL_C, OL_C, GS, SS, SD, SD, SS, SS, OL_C, _, _],
     [_, _, OL_C, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, OL_C, _, _],
-    [_, _, OL_C, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, SS, OL_C, _, _],
-    [_, _, OL_C, SS, SS, SS, SS, DR, DR, DR, DR, SS, SS, SS, SS, SS, SS, OL_C, _, _],
-    [_, _, OL_C, SS, SS, SS, SS, DR, DR, DR, DR, SS, SS, SS, SS, SS, SS, OL_C, _, _],
     [_, _, OL_C, SS, WG, WG, SS, SS, SS, SS, SS, SS, SS, SS, WG, WG, SS, OL_C, _, _],
     [_, _, OL_C, SS, WG, WG, SS, SS, SS, SS, SS, SS, SS, SS, WG, WG, SS, OL_C, _, _],
+    [_, _, OL_C, SS, SD, SD, SS, SS, DR, DR, DR, DR, SS, SS, SD, SD, SS, OL_C, _, _],
+    [_, _, OL_C, SS, SS, SS, SS, SS, DR, DR, DR, DR, SS, SS, SS, SS, SS, OL_C, _, _],
     [_, _, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, OL_C, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
@@ -1095,112 +1149,163 @@ HQ_METROPOLIS: Sprite = [
 
 # Eye color for all villagers (tiny dark dots on face)
 _EYE = (24, 20, 37)  # same as outline — reads as pupils
+# Mouth/skin shadow for face detail
+_MOUTH = (194, 133, 105)  # skin dark — reads as mouth
+
+
+def _hair_hi(hair: Color) -> Color:
+    """Compute a highlight shade for hair (lighter by ~30%)."""
+    return (min(255, hair[0] + 40), min(255, hair[1] + 40), min(255, hair[2] + 40))
+
+
+def _hair_sh(hair: Color) -> Color:
+    """Compute a shadow shade for hair (darker by ~25%)."""
+    return (max(0, hair[0] - 30), max(0, hair[1] - 30), max(0, hair[2] - 30))
+
+
+def _shirt_hi(shirt: Color) -> Color:
+    """Shirt highlight — lighter by ~35 per channel."""
+    return (min(255, shirt[0] + 35), min(255, shirt[1] + 35), min(255, shirt[2] + 35))
+
+
+def _shirt_sh(shirt: Color) -> Color:
+    """Shirt shadow — darker by ~30 per channel."""
+    return (max(0, shirt[0] - 30), max(0, shirt[1] - 30), max(0, shirt[2] - 30))
+
+
+def _pants_hi(pants: Color) -> Color:
+    """Pants highlight."""
+    return (min(255, pants[0] + 25), min(255, pants[1] + 25), min(255, pants[2] + 25))
+
+
+def _boot_hi(boot: Color) -> Color:
+    """Boot highlight."""
+    return (min(255, boot[0] + 30), min(255, boot[1] + 30), min(255, boot[2] + 30))
+
 
 def make_villager(
     hair: Color, skin: Color, shirt: Color, pants: Color,
     accent: Color | None = None,
     hat: Color | None = None,
 ) -> dict[str, list[Sprite]]:
-    """Create a 7x10 chunky RPG villager sprite with clean dark outline.
+    """Create a 7x12 defined RPG villager sprite with full dark outline.
 
     Design reference: Pixel Agents by @Amank1412 — chunky, readable
     characters with clear head/body/legs and bold colors.
-    7 wide x 10 tall is well-proportioned next to 14-20px buildings.
+    7 wide x 12 tall for more detail — proportioned next to 14-20px buildings.
 
-    Features:
-      - Row 0-1: hair (distinct color, no hat unless specified)
-      - Row 2: face with visible eyes (skin + eye dots)
-      - Row 3-4: shirt/top with optional accent stripe
-      - Row 5-6: darker pants
-      - Row 7-8: boots with slight separation
-      - Row 9: feet/ground contact
-      - Dark outline on all edges for readability
+    Every pixel is intentional. Features:
+      - Row 0-2: hair with 2 shades (highlight top, shadow sides)
+      - Row 3: face — skin, 2 visible eye dots, mouth dot
+      - Row 4-6: shirt with highlight, base, shadow (3 colors)
+      - Row 7-8: pants with 2 shades
+      - Row 9-10: boots with highlight
+      - Row 11: ground shadow line
+      - Full #181425 outline on ALL exterior edges
     """
     OL = OL_C   # dark outline
     HD = hair
+    HH = _hair_hi(hair)   # hair highlight
+    HS = _hair_sh(hair)    # hair shadow
     SK = skin
     EY = _EYE   # eyes
+    MT = _MOUTH  # mouth / skin shadow
     SH = shirt
-    PT = pants
-    BT = BOOTS
+    SHH = _shirt_hi(shirt)  # shirt highlight
+    SHS = _shirt_sh(shirt)  # shirt shadow
     RC = accent if accent is not None else shirt
+    PT = pants
+    PTH = _pants_hi(pants)  # pants highlight
+    BT = BOOTS
+    BTH = _boot_hi(BT)      # boot highlight
     HT = hat
 
     # ── IDLE: standing still, arms at sides ──
     idle: Sprite = [
-        [_, _, OL, HD, OL, _, _],        # hair crown
-        [_, OL, HD, HD, HD, OL, _],      # hair sides
-        [_, OL, SK, EY, SK, OL, _],      # face: skin-eye-skin (2 eyes merge to 1 center dot at this scale)
-        [_, OL, SH, RC, SH, OL, _],      # shirt collar + accent
-        [_, OL, SH, SH, SH, OL, _],      # shirt torso
-        [_, OL, SH, SH, SH, OL, _],      # shirt lower / belt line
-        [_, OL, PT, PT, PT, OL, _],       # pants upper
+        [_, _, OL, HH, OL, _, _],        # hair crown highlight
+        [_, OL, HH, HD, HH, OL, _],      # hair — highlight edges, base center
+        [_, OL, HS, HD, HS, OL, _],       # hair lower — shadow sides
+        [_, OL, SK, EY, SK, OL, _],       # face: skin-eye-eye-skin — 2 eyes merge to center
+        [_, OL, SHH, RC, SHH, OL, _],    # shirt collar highlight + accent
+        [_, OL, SH, SH, SH, OL, _],      # shirt torso base
+        [_, OL, SHS, SH, SHS, OL, _],    # shirt lower shadow / belt
+        [_, OL, PTH, PT, PTH, OL, _],    # pants upper — highlight edges
         [_, OL, PT, OL, PT, OL, _],       # pants lower — center gap for legs
-        [_, OL, BT, _, BT, OL, _],       # boots
-        [_, _, OL, _, OL, _, _],          # boot soles
+        [_, OL, BTH, _, BTH, OL, _],     # boots with highlight
+        [_, OL, BT, _, BT, OL, _],       # boot soles
+        [_, _, OL, _, OL, _, _],          # ground contact shadow
     ]
 
     # ── WALK FRAME 1: left leg forward, right arm forward ──
     walk_1: Sprite = [
-        [_, _, OL, HD, OL, _, _],        # hair
-        [_, OL, HD, HD, HD, OL, _],      # hair
-        [_, OL, SK, EY, SK, OL, _],      # face
-        [_, OL, SH, RC, SH, OL, _],      # shirt
+        [_, _, OL, HH, OL, _, _],        # hair highlight
+        [_, OL, HH, HD, HH, OL, _],      # hair
+        [_, OL, HS, HD, HS, OL, _],       # hair shadow
+        [_, OL, SK, EY, SK, OL, _],       # face
+        [_, OL, SHH, RC, SHH, OL, _],    # shirt collar
         [_, SK, SH, SH, SH, OL, _],      # right arm back (skin pixel left)
-        [_, OL, SH, SH, SH, SK, _],      # left arm forward (skin pixel right)
-        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, OL, SHS, SH, SHS, SK, _],    # left arm forward + shirt shadow
+        [_, OL, PTH, PT, PTH, OL, _],    # pants
         [_, PT, OL, _, OL, PT, _],        # stride — legs apart
-        [OL, BT, _, _, _, BT, OL],       # feet wide stride
+        [OL, BTH, _, _, _, BTH, OL],     # feet wide stride + highlight
+        [OL, BT, _, _, _, BT, OL],       # boot soles
         [OL, _, _, _, _, _, OL],          # ground contact
     ]
 
     # ── WALK FRAME 2: right leg forward, left arm forward ──
     walk_2: Sprite = [
-        [_, _, OL, HD, OL, _, _],        # hair
-        [_, OL, HD, HD, HD, OL, _],      # hair
-        [_, OL, SK, EY, SK, OL, _],      # face
-        [_, OL, SH, RC, SH, OL, _],      # shirt
+        [_, _, OL, HH, OL, _, _],        # hair highlight
+        [_, OL, HH, HD, HH, OL, _],      # hair
+        [_, OL, HS, HD, HS, OL, _],       # hair shadow
+        [_, OL, SK, EY, SK, OL, _],       # face
+        [_, OL, SHH, RC, SHH, OL, _],    # shirt collar
         [_, OL, SH, SH, SH, SK, _],      # left arm back
-        [_, SK, SH, SH, SH, OL, _],      # right arm forward
-        [_, OL, PT, PT, PT, OL, _],       # pants
-        [_, PT, OL, _, OL, PT, _],        # stride — legs apart (mirrored)
-        [OL, BT, _, _, _, BT, OL],       # feet wide stride
+        [_, SK, SHS, SH, SHS, OL, _],    # right arm forward + shirt shadow
+        [_, OL, PTH, PT, PTH, OL, _],    # pants
+        [_, PT, OL, _, OL, PT, _],        # stride (mirrored)
+        [OL, BTH, _, _, _, BTH, OL],     # feet stride + highlight
+        [OL, BT, _, _, _, BT, OL],       # boot soles
         [_, OL, _, _, _, OL, _],          # ground contact
     ]
 
     # ── WORK FRAME 1: right arm raised (hammering/typing) ──
     work_1: Sprite = [
-        [_, _, OL, HD, OL, _, _],        # hair
-        [_, OL, HD, HD, HD, OL, _],      # hair
-        [_, OL, SK, EY, SK, OL, _],      # face
-        [_, OL, SH, RC, SH, SK, _],      # shirt + right arm up
+        [_, _, OL, HH, OL, _, _],        # hair highlight
+        [_, OL, HH, HD, HH, OL, _],      # hair
+        [_, OL, HS, HD, HS, OL, _],       # hair shadow
+        [_, OL, SK, EY, SK, OL, _],       # face
+        [_, OL, SHH, RC, SH, SK, _],     # shirt + right arm up
         [_, OL, SH, SH, SH, OL, SK],    # torso + raised hand
-        [_, OL, SH, SH, SH, OL, _],      # shirt lower
-        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, OL, SHS, SH, SHS, OL, _],    # shirt lower shadow
+        [_, OL, PTH, PT, PTH, OL, _],    # pants
         [_, OL, PT, OL, PT, OL, _],       # pants lower
-        [_, OL, BT, _, BT, OL, _],       # boots
-        [_, _, OL, _, OL, _, _],          # soles
+        [_, OL, BTH, _, BTH, OL, _],     # boots highlight
+        [_, OL, BT, _, BT, OL, _],       # boot soles
+        [_, _, OL, _, OL, _, _],          # ground
     ]
 
     # ── WORK FRAME 2: both arms out (carrying/gesturing) ──
     work_2: Sprite = [
-        [_, _, OL, HD, OL, _, _],        # hair
-        [_, OL, HD, HD, HD, OL, _],      # hair
-        [_, OL, SK, EY, SK, OL, _],      # face
-        [SK, OL, SH, RC, SH, OL, SK],   # both arms out
+        [_, _, OL, HH, OL, _, _],        # hair highlight
+        [_, OL, HH, HD, HH, OL, _],      # hair
+        [_, OL, HS, HD, HS, OL, _],       # hair shadow
+        [_, OL, SK, EY, SK, OL, _],       # face
+        [SK, OL, SHH, RC, SHH, OL, SK], # both arms out + highlight
         [_, OL, SH, SH, SH, OL, _],      # torso
-        [_, OL, SH, SH, SH, OL, _],      # shirt lower
-        [_, OL, PT, PT, PT, OL, _],       # pants
+        [_, OL, SHS, SH, SHS, OL, _],    # shirt lower shadow
+        [_, OL, PTH, PT, PTH, OL, _],    # pants
         [_, OL, PT, OL, PT, OL, _],       # pants lower
-        [_, OL, BT, _, BT, OL, _],       # boots
-        [_, _, OL, _, OL, _, _],          # soles
+        [_, OL, BTH, _, BTH, OL, _],     # boots highlight
+        [_, OL, BT, _, BT, OL, _],       # boot soles
+        [_, _, OL, _, OL, _, _],          # ground
     ]
 
-    # Optional hat overrides top two rows of hair
+    # Optional hat overrides top three rows (hair rows)
     if HT is not None:
         for frame in [idle, walk_1, walk_2, work_1, work_2]:
-            frame[0] = [_, OL, HT, HT, HT, OL, _]   # hat brim
-            frame[1] = [_, OL, HT, HD, HT, OL, _]    # hat + hair peek
+            frame[0] = [_, OL, HT, HT, HT, OL, _]   # hat top
+            frame[1] = [OL, HT, HT, HT, HT, HT, OL] # hat brim wide
+            frame[2] = [_, OL, HD, HD, HD, OL, _]     # hair peek below hat
 
     return {
         "idle": [idle],
